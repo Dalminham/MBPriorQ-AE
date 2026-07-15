@@ -1,11 +1,14 @@
 # Zenodo Release Checklist
 
+Follow [`ZENODO_RELEASE.md`](ZENODO_RELEASE.md) for the required DOI reservation,
+tagging, archive, and publication order.
+
 ## Blocking Metadata
 
-- [ ] Authors approve the public source license.
-- [ ] Author names, affiliations, ORCIDs (if used), and contact are confirmed.
+- [x] Authors approve the Apache-2.0 public source license.
+- [x] Author names, affiliations, and corresponding-author contact are recorded.
 - [x] Final paper title and revised abstract are transcribed into metadata drafts.
-- [ ] Confirmed author metadata is promoted from templates to final Zenodo and
+- [x] Confirmed author metadata is promoted to final `.zenodo.json` and
       `CITATION.cff` files.
 - [ ] The HotCRP abstract is replaced with the revised abstract; the removed
       unsupported end-to-end speedup claim must not remain.
@@ -49,7 +52,7 @@
 - [x] Candidate source closure is validated from a `git archive` extraction
       without `.git` metadata or access to untracked repository files.
 - [ ] The same clean-archive validation is rerun from the final release tag
-      after license, citation, and DOI metadata are fixed.
+      after the DOI is inserted.
 - [ ] Release archive checksum is recorded.
 - [ ] Git tag and Zenodo version agree.
 - [ ] DOI resolves publicly before the final AE submission update.

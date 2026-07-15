@@ -8,9 +8,10 @@
 | MBPriorQ accelerator | `https://github.com/Dalminham/MBPriorQ-Accelerator.git` | branch `main`, commit `476c7bc9846e377309e93a69d66626cab63b3ddd` | Public-top SpinalHDL design closure and functional simulations. |
 | Revision evidence | MICRO 2026 revision workspace | per-file SHA-256 in artifact manifests | Author-generated expected outputs and the Qwen3-0.6B importance matrix only. |
 
-The two author repositories do not currently carry an approved public root
-license. This artifact must not infer one. An author-approved license is a hard
-release blocker.
+The author-generated source curated into this artifact is released under
+Apache-2.0. This is an explicit license for this artifact and does not alter the
+licensing of files outside its source closure. Retained third-party notices
+continue to govern their respective materials.
 
 ## Third-Party Boundary
 

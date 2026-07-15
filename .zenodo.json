@@ -1,0 +1,51 @@
+{
+  "title": "MBPriorQ: Artifact for Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization",
+  "upload_type": "software",
+  "description": "Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families. The archive contains a representative Qwen3-0.6B accuracy reproduction, central ablations, and open SpinalHDL/Verilator functional validation of the MBPriorQ hardware mechanisms. It excludes commercial EDA data and reproductions of comparison methods.",
+  "creators": [
+    {
+      "name": "Wei, Yijian",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Yang, Tianchang",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Tao, Sicheng",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Hao, Miao",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Liu, Tianyi",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Zhang, Tingting",
+      "affiliation": "Loongson Technology Co. Ltd."
+    },
+    {
+      "name": "Zhang, Fuxin",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    },
+    {
+      "name": "Wang, Jian",
+      "affiliation": "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+    }
+  ],
+  "keywords": [
+    "large language models",
+    "post-training quantization",
+    "W4A4",
+    "FP4",
+    "hardware accelerator",
+    "artifact evaluation"
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "version": "1.0.0",
+  "language": "eng"
+}

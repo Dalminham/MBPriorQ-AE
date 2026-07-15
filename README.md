@@ -13,9 +13,12 @@ comparison methods.
 ## Status And Evidence Levels
 
 The source closure and representative workflows have been assembled and tested.
-The remaining public-release blockers are the author-approved source license,
-final citation metadata, release tag, and Zenodo DOI. See
+The remaining public-release blockers are the final public repository, release
+tag, and Zenodo DOI. See
 [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+Author-generated source in this artifact is released under
+[`Apache-2.0`](LICENSE); retained external notices remain separately identified
+under [`third_party/`](third_party/README.md).
 
 Results are deliberately separated into two evidence levels:
 
@@ -39,6 +42,8 @@ It is not presented as a reproduction of paper-level speedup, area, or power.
   validation and remaining release gates.
 - [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md): publication and
   clean-room validation gates.
+- [`docs/ZENODO_RELEASE.md`](docs/ZENODO_RELEASE.md): DOI reservation, final
+  tag, archive, and publication order.
 - [`environment/`](environment/README.md): software and hardware environments.
 - [`software/`](software/README.md): curated MBPriorQ implementation.
 - [`experiments/`](experiments/README.md): stable PPL and ablation entry points.

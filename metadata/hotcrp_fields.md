@@ -87,9 +87,9 @@ and the public `wikitext-2-raw-v1` test split, downloaded from their official
 providers under their respective terms. The functional tensor and hardware
 workflows require no external model or dataset.
 
-## Author Confirmation Still Required
+## Final Submission Actions
 
-- public source license;
-- final author/affiliation spelling and optional ORCIDs;
-- release version/tag and public Zenodo DOI;
-- corresponding-author selection.
+- publish the public repository and `v1.0.0` tag;
+- publish the Zenodo record and replace the DOI placeholder;
+- upload the paper plus artifact appendix and paste these fields into HotCRP;
+- mark the submission ready for review before the deadline.

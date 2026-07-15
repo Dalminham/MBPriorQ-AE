@@ -95,8 +95,7 @@ screenshots, and area/power data are also excluded.
 
 The executable artifact is validated. Public release is still blocked on:
 
-1. author approval of the source license;
-2. confirmation of author/corresponding-author metadata;
-3. final repository URL, release version/tag, and Zenodo DOI;
-4. promotion of the metadata templates to final `.zenodo.json` and
-   `CITATION.cff`, followed by a strict audit and clean-tag validation.
+1. creation of the final public repository and `v1.0.0` release tag;
+2. publication of the Zenodo record and assignment of its version DOI;
+3. DOI insertion into the artifact appendix, followed by strict audit and
+   clean-tag validation.

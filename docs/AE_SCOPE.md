@@ -71,4 +71,4 @@ area, and power remain paper results and are not an AE badge target.
 
 The intended submission requests Artifact Available, Artifact Evaluated -
 Functional, and Results Reproduced. These are targets until the approved public
-license, tagged clean-room validation, Zenodo archive, and DOI are complete.
+tag, final clean-archive validation, Zenodo archive, and DOI are complete.

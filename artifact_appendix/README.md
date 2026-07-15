@@ -4,9 +4,9 @@
 main text. `ae.tex` is a standalone ACM two-column wrapper used to validate the
 two-page limit locally.
 
-Before release, replace `ArtifactVersion`, `ArtifactDOI`, and `ArtifactLicense`
-in `ae.tex`, and use the same values in the paper-integrated appendix and
-release metadata.
+The version and license are fixed to `v1.0.0` and Apache-2.0. Before release,
+replace only `ArtifactDOI` in `ae.tex`, and use the same DOI in the
+paper-integrated appendix and HotCRP metadata.
 
 Build and check it with:
 

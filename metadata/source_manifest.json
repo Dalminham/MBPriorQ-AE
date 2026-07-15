@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
-  "artifact_status": "release_candidate_pending_license_and_doi",
+  "artifact_status": "release_candidate_pending_public_tag_and_doi",
+  "artifact_license": "Apache-2.0",
   "paper": {
     "title": "Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families",
     "submission_id": 1308,
@@ -58,6 +59,8 @@
     "qwen3_0_6b_granularity_ablation": "passed, 3 rows",
     "hardware_module_functional_tests": "passed, 5 expected CSVs",
     "hardware_public_packet_top": "passed, 245 output packets",
-    "artifact_boundary": "comparison-method reproductions and commercial EDA data excluded"
+    "artifact_boundary": "comparison-method reproductions and commercial EDA data excluded",
+    "citation_cff_schema": "valid CFF 1.2.0",
+    "zenodo_metadata": "valid top-level Zenodo JSON structure"
   }
 }

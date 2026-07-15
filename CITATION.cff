@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+message: "If you use this artifact, please cite the MBPriorQ paper and artifact release."
+title: "MBPriorQ Artifact Evaluation"
+type: software
+version: "1.0.0"
+date-released: "2026-07-15"
+license: Apache-2.0
+abstract: >-
+  Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware
+  W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families.
+  It provides a representative Qwen3-0.6B accuracy reproduction, central
+  ablations, and open SpinalHDL/Verilator functional validation of MBPriorQ's
+  hardware mechanisms.
+keywords:
+  - large language models
+  - post-training quantization
+  - W4A4
+  - FP4
+  - hardware accelerator
+  - artifact evaluation
+authors:
+  - family-names: Wei
+    given-names: Yijian
+    email: weiyijian24b@ict.ac.cn
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Yang
+    given-names: Tianchang
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Tao
+    given-names: Sicheng
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Hao
+    given-names: Miao
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Liu
+    given-names: Tianyi
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Zhang
+    given-names: Tingting
+    affiliation: "Loongson Technology Co. Ltd."
+  - family-names: Zhang
+    given-names: Fuxin
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+  - family-names: Wang
+    given-names: Jian
+    affiliation: "State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences; University of Chinese Academy of Sciences"
+contact:
+  - family-names: Wei
+    given-names: Yijian
+    email: weiyijian24b@ict.ac.cn
+preferred-citation:
+  type: conference-paper
+  title: "Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families"
+  year: 2026
+  authors:
+    - family-names: Wei
+      given-names: Yijian
+    - family-names: Yang
+      given-names: Tianchang
+    - family-names: Tao
+      given-names: Sicheng
+    - family-names: Hao
+      given-names: Miao
+    - family-names: Liu
+      given-names: Tianyi
+    - family-names: Zhang
+      given-names: Tingting
+    - family-names: Zhang
+      given-names: Fuxin
+    - family-names: Wang
+      given-names: Jian

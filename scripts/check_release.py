@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -152,6 +153,36 @@ def audit_checksums() -> list[str]:
     return findings
 
 
+def audit_zenodo_metadata() -> list[str]:
+    path = ROOT / ".zenodo.json"
+    if not path.is_file():
+        return []
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return [f"invalid .zenodo.json: {exc}"]
+    if not isinstance(payload, dict):
+        return ["invalid .zenodo.json: root must be an object"]
+
+    findings: list[str] = []
+    if "metadata" in payload:
+        findings.append("invalid .zenodo.json: metadata fields must be at the root")
+    for key in ("title", "upload_type", "description", "creators", "license", "version"):
+        if key not in payload:
+            findings.append(f"invalid .zenodo.json: missing {key}")
+    if payload.get("upload_type") != "software":
+        findings.append("invalid .zenodo.json: upload_type must be software")
+    if payload.get("access_right") != "open":
+        findings.append("invalid .zenodo.json: access_right must be open")
+    if payload.get("license") != "Apache-2.0":
+        findings.append("invalid .zenodo.json: license must be Apache-2.0")
+    creators = payload.get("creators")
+    if not isinstance(creators, list) or len(creators) != 8:
+        findings.append("invalid .zenodo.json: expected the eight paper authors")
+    return findings
+
+
 def audit(strict: bool) -> list[str]:
     findings: list[str] = []
     files = iter_files()
@@ -233,6 +264,7 @@ def audit(strict: bool) -> list[str]:
                 findings.append(f"unresolved release placeholder: {rel}")
 
         findings.extend(audit_checksums())
+        findings.extend(audit_zenodo_metadata())
 
     return sorted(set(findings))
 
