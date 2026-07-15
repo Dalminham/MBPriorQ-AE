@@ -8,9 +8,9 @@ validate the central W4A4 accuracy claim:
 
 The MBPriorQ row starts from the public BF16 checkpoint. The workflow first
 creates a fake-quantized Hugging Face checkpoint, including `lm_head`, and then
-applies activation fake quantization during a paper-compatible layer-wise PPL
+applies activation fake quantization during a paper-compatible full-GPU PPL
 run. The supplied importance matrix is used by the MBPriorQ weight checkpoint
-generator.
+generator; no other model consumes it.
 
 Set the model and, optionally, a local WikiText2 dataset path:
 
@@ -52,6 +52,7 @@ minutes. Runtime depends on storage and GPU generation.
 - A dataset connection error can be avoided by downloading WikiText2 with
   Hugging Face Datasets and setting `DATASET_PATH` to that local directory.
 - CUDA out-of-memory errors usually indicate another process is using the GPU;
-  this layer-wise workflow is validated with at least 8 GB free VRAM.
+  this representative full-GPU workflow is validated with at least 8 GB free
+  VRAM. Use `offload_equivalence` to exercise the lower-memory backend.
 - Delete the corresponding directory under `local_runs/checkpoints/` to rebuild
   a stale generated checkpoint from scratch.

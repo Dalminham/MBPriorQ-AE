@@ -30,7 +30,10 @@ tagging, archive, and publication order.
 
 - [x] `scripts/run_smoke.sh` passes in the isolated validation environment.
 - [x] Representative Qwen3-0.6B accuracy workflow passes all 146 windows.
-- [x] Activation-attribution and refined-granularity workflows pass.
+- [x] Existing Qwen3-0.6B activation-attribution and refined-granularity rows pass.
+- [ ] Final clean-archive quick pass covers the expanded Llama2-7B drivers.
+- [x] Full-GPU/streamed equivalence and real Qwen3-VL language-side BF16 streaming pass.
+- [x] Qwen3-0.6B BF16/MBPriorQ downstream generation smokes pass on all three datasets.
 - [x] Metadata EBW accounting and deterministic tensor fixtures pass.
 - [x] Hardware module and public packet-top functional simulations pass.
 - [x] Every result claimed in the final AE scope has an executable MBPriorQ

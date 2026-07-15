@@ -10,6 +10,11 @@ public workflows.
 - `local_validation.json`: sanitized exact outputs and tested environment from
   the completed public Qwen3-0.6B workflows.
 
+The dual-model Table 5/6 expectations and the 16/19-model Table 2 expectations
+live beside their executable drivers under `experiments/`; this directory
+retains the compact completed Qwen3-0.6B evidence rather than duplicating those
+matrices.
+
 All rows use WikiText2 raw test, BF16 execution, 2048-token contiguous windows,
 and the paper-compatible layer-wise PPL denominator. The full Qwen3-0.6B run
 contains 146 windows. No comparison-method reproduction is included.

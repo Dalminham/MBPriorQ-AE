@@ -1,4 +1,7 @@
-row,perplexity,ppl_tolerance,num_samples,weight_effective_ebw,activation_effective_ebw,ebw_tolerance
-rb8,24.8590,0.0750,146,4.598690,4.704345,0.000010
-rb4,24.2289,0.0750,146,4.673069,4.994211,0.000010
-rb2,23.9532,0.0750,146,4.837506,5.613351,0.000010
+row,result_file,perplexity,ppl_tolerance,num_samples,weight_effective_ebw,activation_effective_ebw,ebw_tolerance
+qwen_rb8,qwen__rb8.json,24.8590,0.0750,146,4.598690,4.704345,0.000010
+qwen_rb4,qwen__rb4.json,24.2289,0.0750,146,4.673069,4.994211,0.000010
+qwen_rb2,qwen__rb2.json,23.9532,0.0750,146,4.837506,5.613351,0.000010
+llama_rb8,llama__rb8.json,5.7714,0.0500,166,4.585690,4.662412,0.000010
+llama_rb4,llama__rb4.json,5.7510,0.0500,166,4.620366,4.863003,0.000010
+llama_rb2,llama__rb2.json,5.7412,0.0500,166,4.696337,5.281226,0.000010

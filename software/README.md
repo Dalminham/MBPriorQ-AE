@@ -1,35 +1,34 @@
 # Software Artifact
 
-This directory contains the minimal executable closure for MBPriorQ, VMB
-profiling, EBW accounting, streamed checkpoint generation, and the
-paper-compatible WikiText2 PPL path.
-
-It does not import every EasyQuant baseline at module-import time. The curated
-entry point exposes only algorithms required by the MBPriorQ paper artifact.
-
-Install the package in an isolated environment:
+`software/mbpriorq_ae/` is the minimal executable MBPriorQ closure used by the
+public experiments. Install it from the repository root with:
 
 ```bash
 python -m pip install -e software
 ```
 
-Run the dependency-light tests from the repository root:
+## Components
+
+| Module | Responsibility |
+|---|---|
+| `mbpriorq.py` | W4A4 fake quantization, VMB selection, online prior, and 16-to-{8,4,2} refinement. |
+| `integration.py` | Hugging Face Linear and Qwen3-VL stacked-expert activation wrappers. |
+| `checkpoint.py` | Bounded-memory generation of loadable fake-quantized checkpoints, including `lm_head`. |
+| `perplexity.py` | Paper-compatible contiguous-window PPL with a true full-GPU backend. |
+| `offload.py` | Correctness-oriented safetensors layer streaming for standard decoder models and Qwen3-VL's language path. |
+| `ebw.py` | Formal mask/scale/effective-bit-width accounting. |
+
+The streamed backend is included so large paper models do not need to fit in
+VRAM. It keeps hidden states in CPU DRAM and loads one decoder layer from the
+checkpoint at a time. It raises on NaN/Inf and does not silently alter outputs.
+It is an AE execution mechanism, not a claim of serving-system performance.
+
+Run all dependency-light tests with:
 
 ```bash
-PYTHONPATH=software python -m unittest discover -s software/tests -v
+PYTHONPATH=software python -m pytest -q software/tests
 ```
 
-`scripts/compare_software_source.py` is a maintainer check. It compares all
-curated quantization paths against the pinned EasyLLM `MICRO` revision and is
-not required by artifact evaluators.
-
-The optional development calibration-mask plot was replaced by a no-op hook
-because it wrote to a workstation-specific path and does not affect any paper
-result. Quantization outputs are checked element-for-element against the source
-revision after this import-only change.
-
-The model-level integration is split by responsibility:
-
-- `checkpoint.py` generates bounded-memory fake-quantized HF checkpoints;
-- `integration.py` wraps only paper-scope Linear activations;
-- `perplexity.py` implements contiguous 2048-token, layer-wise evaluation.
+`scripts/compare_software_source.py` is a maintainer provenance check against
+the pinned private development revision. Evaluators do not need that source
+tree.

@@ -19,6 +19,11 @@ from mbpriorq_ae.logging import set_log_level
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-model", required=True)
+    parser.add_argument(
+        "--model-key",
+        required=True,
+        help="Stable experiment key; qwen3_0_6b has a mandatory imatrix policy",
+    )
     parser.add_argument("--output", required=True)
     parser.add_argument("--method", required=True, choices=("mbpriorq",))
     parser.add_argument("--refined-block-size", type=int, default=4, choices=(2, 4, 8))
@@ -30,6 +35,10 @@ def parse_args():
 def main():
     args = parse_args()
     set_log_level("release")
+    if args.model_key == "qwen3_0_6b" and not args.imatrix:
+        raise ValueError("Qwen3-0.6B checkpoint generation requires --imatrix")
+    if args.model_key != "qwen3_0_6b" and args.imatrix:
+        raise ValueError("Only Qwen3-0.6B may use the bundled imatrix")
     stats = stream_fake_quantize_checkpoint(
         source_path=args.source_model,
         output_path=args.output,

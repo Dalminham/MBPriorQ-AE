@@ -82,7 +82,11 @@ def _group_tensors(weight_map: dict[str, str]) -> tuple[list[str], dict[str, lis
 def _should_quantize(tensor_name: str, tensor: torch.Tensor) -> bool:
     if tensor_name == LM_HEAD_TENSOR_NAME:
         return tensor.ndim >= 2
-    if tensor.ndim < 2 or not tensor_name.endswith(".weight"):
+    if tensor.ndim < 2:
+        return False
+    regular_weight = tensor_name.endswith(".weight")
+    stacked_expert = ".mlp.experts." in tensor_name
+    if not (regular_weight or stacked_expert):
         return False
     return any(
         marker in tensor_name

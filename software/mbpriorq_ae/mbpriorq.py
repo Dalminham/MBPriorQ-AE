@@ -346,9 +346,11 @@ class MBPriorQ_Quantizer(EasyQuantDemo):
         )
 
     def _first2_column_mask(self, activation_2d: torch.Tensor, name: str):
-        """Compute the current-window first-2-token local VMB column mask."""
+        """Compute a column mask from up to two currently available tokens."""
         first2_activation = activation_2d[:2]
-        first2_activation = first2_activation.reshape(2, -1, LAST_LEVEL_BLOCK_SIZE)
+        first2_activation = first2_activation.reshape(
+            first2_activation.shape[0], -1, LAST_LEVEL_BLOCK_SIZE
+        )
         local_std = first2_activation.std(dim=-1).float()
         threshold_local_std, num_replaced_blk, replaced_percent = self._search_threshold_for_replacement(first2_activation, name)
         local_mask = local_std > threshold_local_std
@@ -677,12 +679,15 @@ class MBPriorQ_Quantizer(EasyQuantDemo):
 
     def _quantize_regression_nvfp4(self, weight: torch.Tensor, block_size: int, weights_scaling_factor_2: torch.Tensor, name: str):
         weight = weight.reshape(-1, block_size)
+        fp4_values = e2m1_values.to(weight.device)
 
         max_val = weight.abs().amax(dim=1).float()
         sigma2 = weight.square().mean()
 
         if self.using_imatrix and name != "lm_head":
-            imatrix = self._read_tensor_from_imatrix(self.imatrix_file_name, name)
+            imatrix = self._read_tensor_from_imatrix(
+                self.imatrix_file_name, name
+            ).to(weight.device)
             org_shape_weight = weight.reshape(-1, len(imatrix))
             temp = torch.ones_like(org_shape_weight)
             modification = imatrix * temp
@@ -694,7 +699,7 @@ class MBPriorQ_Quantizer(EasyQuantDemo):
         scale = 1 / iscale
         quants = weight * iscale
         idx = self._cast_fp4(quants).to(torch.long)
-        quants = e2m1_values[idx]
+        quants = fp4_values[idx]
 
         diff = quants * scale - weight
         best_mad = (diff.square() * modification).sum(dim=1).unsqueeze(1)
@@ -709,7 +714,7 @@ class MBPriorQ_Quantizer(EasyQuantDemo):
             new_scale = 1 / new_iscale
             new_quants = weight * new_iscale
             idx = self._cast_fp4(new_quants).to(torch.long)
-            new_quants = e2m1_values[idx]
+            new_quants = fp4_values[idx]
 
             diff = new_quants * new_scale - weight
             new_mad = (diff.square() * modification).sum(dim=1).unsqueeze(1)

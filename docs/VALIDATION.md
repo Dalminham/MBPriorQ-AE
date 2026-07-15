@@ -28,11 +28,17 @@ not part of the experiment contract.
 | Check | Result | Evidence |
 |---|---|---|
 | Curated-source equivalence against pinned EasyLLM `MICRO` commit | Passed for every imported MBPriorQ prior mode and refined block size | `scripts/compare_software_source.py`, `docs/PROVENANCE.md` |
-| Python unit tests | 10/10 passed | `software/tests/` |
+| Python unit tests | 14/14 passed, including one-token decode prior refinement and strict streamed-checkpoint loading | `software/tests/` |
 | Deterministic tensor and EBW smoke | Passed | `scripts/run_smoke.sh` |
 | Qwen3-0.6B core accuracy | Passed over all 146 contiguous 2048-token WikiText2 windows | `evidence/ppl/local_validation.json` |
-| Activation attribution | All 6 expected rows passed | `experiments/activation_attribution/expected.csv` |
-| Refined granularity | All 16-to-8/4/2 rows passed | `experiments/granularity_ablation/expected.csv` |
+| Full-GPU/streamed equivalence | Exact one-window BF16 and MBPriorQ NLL/PPL match | `experiments/offload_equivalence/` |
+| Online/prequant weight-path equivalence | Qwen3-0.6B online paper-semantics quantization reproduced the prequant one-window MBPriorQ PPL `16.890377` and NLL `5789.171875` exactly | `scripts/run_wikitext_ppl.py` |
+| Model-suite preflight | All 16 original and all 19 revised model paths resolved | `experiments/model_family_ppl/models.json` |
+| Streamed structure coverage | All 19 model skeletons and checkpoint prefixes were rechecked successfully, including Qwen3-VL language-only | `scripts/check_offload_structure.py` |
+| Real streamed PPL | Llama2-7B BF16 completed one window; Qwen3-VL-235B language-side BF16 completed 94 layers with PPL 2.937617 | `local_runs/backend_validation/` (generated, not distributed) |
+| Downstream smoke | Real Qwen3-0.6B BF16 and MBPriorQ generation completed on one GSM8K, MMLU, and MMLU-Pro example; MBPriorQ resume replay also passed | `scripts/run_downstream_benchmark.py` |
+| Activation attribution | Public driver and expected matrix cover 12 Qwen3-0.6B/Llama2-7B rows; prior Qwen full rows are retained as evidence | `experiments/activation_attribution/expected.csv` |
+| Refined granularity | Public driver and expected matrix cover all six Qwen3-0.6B/Llama2-7B rows; prior Qwen full rows are retained as evidence | `experiments/granularity_ablation/expected.csv` |
 
 The representative full accuracy result is:
 
@@ -44,6 +50,23 @@ The representative full accuracy result is:
 These checkpoints are fake-quantized BF16/FP16-style Hugging Face checkpoints,
 not physically packed FP4 files. They are generated locally and excluded from
 the artifact archive.
+
+The one-window backend equivalence values were:
+
+| Method | Full-GPU PPL / NLL | Streamed PPL / NLL |
+|---|---:|---:|
+| BF16 | 14.224318 / 5437.343750 | 14.224318 / 5437.343750 |
+| MBPriorQ | 16.890377 / 5789.171875 | 16.890377 / 5789.171875 |
+
+These one-window values are execution validation, not substitutes for the
+146-window paper result.
+
+The Qwen3-VL execution check used the 439 GB local source checkpoint, kept only
+one of 94 language layers on the RTX 5090, and completed in 456.68 seconds
+without a non-finite value or an out-of-memory failure. Its one-window PPL is a
+backend check, not the full Table 2 row. The complete MBPriorQ Qwen3-VL path
+retains paper-compatible tensor-level weight quantization and is intentionally
+documented as a day-scale extended reproduction rather than a quick check.
 
 ## Open Hardware Validation
 
@@ -83,7 +106,7 @@ screenshots, and area/power data are also excluded.
 - `metadata/release_files.sha256` verifies every distributable file but must be
   regenerated after any source or documentation edit.
 - A `git archive` extraction without repository metadata passed the software
-  smoke and all 10 unit tests, all five hardware-module comparisons, the public
+  smoke and the then-current unit tests, all five hardware-module comparisons, the public
   packet-top comparison, the appendix build, the release audit, and all 103
   release checksums. This confirms that the candidate does not rely on
   untracked source files or its original workstation path.

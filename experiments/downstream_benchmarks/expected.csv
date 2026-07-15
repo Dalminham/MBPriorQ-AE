@@ -1,0 +1,5 @@
+model_key,model,method,gsm8k,mmlu,mmlu_pro
+qwen3_0_6b,Qwen3-0.6B,bf16,42.40,46.00,31.46
+qwen3_0_6b,Qwen3-0.6B,mbpriorq,32.60,41.00,28.54
+qwen3_14b,Qwen3-14B,bf16,91.00,84.00,72.44
+qwen3_14b,Qwen3-14B,mbpriorq,90.00,81.00,71.46

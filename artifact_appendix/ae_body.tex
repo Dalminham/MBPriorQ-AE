@@ -2,13 +2,13 @@
 \section{Artifact Appendix}
 
 \subsection{Abstract}
-The artifact provides the paper-relevant MBPriorQ software, representative
-Qwen3-0.6B experiments on WikiText2, and curated MBPriorQ accelerator sources in
-SpinalHDL. The public
-workflows reproduce the representative W4A4 accuracy and central ablations,
-validate mask/scale accounting, and functionally exercise the packet scheduler,
-regular/refined MultiMSA, shared FPU pool, output synchronization, and
-packetization with Verilator.
+The artifact provides the paper-relevant MBPriorQ software, WikiText2 and
+downstream experiment drivers, low-memory model execution, and curated MBPriorQ
+accelerator sources in SpinalHDL. The public workflows reproduce the core W4A4
+accuracy row, expose the 16-model and revised 19-model PPL matrices, cover both
+models in the central ablations, and validate full-GPU/streamed equivalence.
+Open simulation functionally exercises metadata handling, regular/refined
+MultiMSA, the shared FPU pool, output synchronization, and packetization.
 Commercial EDA data and reproductions of comparison methods are intentionally
 outside the artifact scope.
 
@@ -19,17 +19,18 @@ outside the artifact scope.
     prior, selective 16-to-4 refinement, and EBW accounting.
   \item \textbf{Program:} Python/PyTorch software; Scala/SpinalHDL hardware;
     Bash/Python automated validation.
-  \item \textbf{Model/data:} public Qwen3-0.6B and WikiText2 raw test; the small
-    importance matrix is included, but model weights and WikiText2 are not.
+  \item \textbf{Model/data:} public paper-listed models, WikiText2, GSM8K,
+    MMLU, and MMLU-Pro; only the Qwen3-0.6B importance matrix is included.
   \item \textbf{Run-time environment:} Linux x86-64; Python 3.12, PyTorch 2.10,
     Transformers 4.57; Java 17, sbt 1.10.2, SpinalHDL 1.8, Verilator 4.034+.
   \item \textbf{Hardware:} core PPL: NVIDIA GPU with at least 8\,GB free VRAM;
-    functional/hardware simulation: CPU only. Tested on an RTX 5090.
+    large-model PPL: one decoder layer must fit VRAM; simulation: CPU only.
   \item \textbf{Metrics/output:} perplexity, effective bit width, cycle counts,
     and generated protocol CSVs.
   \item \textbf{Disk/time:} about 10\,GB for the core workflow; under 1 minute
-    for software smoke, tens of minutes for Qwen3-0.6B experiments, about one
-    minute for hardware modules, and 8--15 minutes for the public top.
+    for smoke, tens of minutes for core experiments, and 8--15 minutes for the
+    public hardware top. Multi-model runs require their public checkpoints and
+    range from hours to days.
   \item \textbf{Availability:} tagged release \ArtifactVersion; DOI
     \ArtifactDOI; source license \ArtifactLicense.
 \end{itemize}
@@ -42,13 +43,13 @@ tag and archive version must match. The repository root \path{README.md}
 indexes the claim map, provenance, expected outputs, and release checksums.
 
 \subsubsection{Hardware, Software, Data, and Models}
-The functional tensor check needs a Linux host with approximately 8\,GB RAM.
-The representative PPL run needs at least 16\,GB system RAM and 8\,GB free CUDA
-VRAM. Open hardware simulation additionally requires Java 17, sbt, Verilator, Make,
-and a C++ compiler; no GPU is required. Conda specifications are provided in
-\path{environment/}. Qwen3-0.6B and WikiText2 are downloaded from their
-official providers under their respective terms. The archive retains the Qwen
-model-license notice but does not redistribute model weights or WikiText2.
+The tensor check needs a Linux host with approximately 8\,GB RAM. The core PPL
+run needs 16\,GB system RAM and 8\,GB free CUDA VRAM. Large models use
+safetensors layer streaming with CPU-resident hidden windows; the full model
+does not need to fit VRAM. Open hardware simulation additionally requires Java
+17, sbt, Verilator, Make, and a C++ compiler. Conda specifications are in
+\path{environment/}. Models and datasets are obtained from their public
+providers; neither is redistributed.
 
 \subsection{Installation}
 From the repository root, create the software environment with:
@@ -62,21 +63,24 @@ and install sbt 1.10.2. Installation takes about 10--20 minutes with a normal
 package cache and Internet connection.
 
 \subsection{Experiment Workflow}
-Download \path{Qwen/Qwen3-0.6B} and set \path{MODEL_PATH} before steps 2--3.
-Run the following commands from the repository root:
+Download Qwen3-0.6B and WikiText2 for the core path. Additional workflows state
+their model and dataset variables in their local README. Run from the root:
 {\scriptsize
 \begin{flushleft}\setlength\parskip{0pt}
 1. \path{scripts/run_smoke.sh}\\
 2. \path{experiments/core_accuracy/run.sh}\\
-3a. \path{experiments/activation_attribution/run.sh}\\
-3b. \path{experiments/granularity_ablation/run.sh}\\
-4a. \path{scripts/run_hardware_modules.sh}\\
-4b. \path{scripts/run_hardware_system.sh}
+3. \path{experiments/model_family_ppl/run_paper16.sh}\\
+4. \path{experiments/downstream_benchmarks/run.sh}\\
+5a. \path{experiments/activation_attribution/run.sh}\\
+5b. \path{experiments/granularity_ablation/run.sh}\\
+6. \path{experiments/offload_equivalence/run.sh}\\
+7. \path{scripts/run_hardware_all.sh}
 \end{flushleft}
 }
-Step 1 checks tensor and EBW semantics. Steps 2--3 reproduce PPL/ablation rows
-and reuse generated checkpoints locally. Step 4 validates actual SpinalHDL
-modules and the public 1024-bit packet top against recorded functional outputs.
+Step 1 checks tensor/EBW semantics. Step 2 is the bounded Results Reproduced
+target. Steps 3--5 are long model/table extensions; both ablations include
+Qwen3-0.6B and Llama2-7B. Step 6 checks that streaming does not shift NLL.
+Step 7 validates actual SpinalHDL modules and the public 1024-bit packet top.
 
 \subsection{Evaluation and Expected Results}
 The full core run must process 146 contiguous 2048-token windows and report:
@@ -91,23 +95,25 @@ W4A4 MBPriorQ & 24.2289 & 4.994211 \\
 \bottomrule
 \end{tabular}
 \end{center}
-For 16-to-8/4/2 refinement, expected PPL is 24.8590/24.2289/23.9532 and
-activation EBW is 4.704345/4.994211/5.613351. Each script enforces its recorded
-tolerance and sample count. Hardware checks must reproduce all expected CSVs.
+For Qwen3-0.6B, expected PPL is 24.8590 at 16-to-8, 24.2289 at 16-to-4,
+and 23.9532 at 16-to-2. Corresponding activation EBW is 4.704345,
+4.994211, and 5.613351. Llama2-7B and other expectations are stored beside
+their drivers. Full scripts enforce recorded tolerances and sample counts;
+quick scripts check execution only. Hardware checks reproduce expected CSVs.
 
 \subsection{Experiment Customization}
-\texttt{NUM\_SAMPLES} shortens PPL runs for functional debugging; only zero
-(all windows) is a reproduced full row. \texttt{DATASET\_PATH} selects a local
-WikiText2 copy. The granularity workflow exposes 16-to-8/4/2 configurations.
-Hardware scripts may be run separately to isolate module tests from the heavier
-public-top Verilator compilation.
+\texttt{NUM\_SAMPLES} shortens PPL runs; only zero (all windows) is a full row.
+\texttt{MODEL\_ROOTS} or a JSON path map locates the 16/19 model suite.
+Qwen3-0.6B alone consumes the included imatrix. Hardware module tests may be
+run separately from the heavier public-top compilation.
 
 \subsection{Notes}
-The complete 19-entry accuracy sweep and large-model extensions are outside the
-default AE rerun; the public Results Reproduced target uses the fully executable
-Qwen3-0.6B representative workflow. Hardware tests target functional validity,
-not speedup, area, or power. Commercial synthesis evidence and reproductions of
-comparison methods are not distributed or evaluated by this artifact.
+The complete model matrix is executable but remains an extended run because of
+public model access, hundreds of GB of storage, and day-scale quantization for
+the largest entry. The default Results Reproduced target is the fully
+executable Qwen3-0.6B workflow. Hardware tests target functionality, not
+speedup, area, or power. Comparison-method code and commercial synthesis
+evidence are not distributed or evaluated.
 
 \subsection{Methodology}
 Artifact review and badging follow the ACM policy at

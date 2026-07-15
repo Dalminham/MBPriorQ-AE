@@ -17,6 +17,7 @@ mkdir -p "${RESULTS}"
 if [[ ! -f "${MBPRIORQ_CHECKPOINT}/mbpriorq_ae_prequant_metadata.json" ]]; then
   "${PYTHON}" "${ROOT}/scripts/prequantize_checkpoint.py" \
     --source-model "${MODEL_PATH}" \
+    --model-key qwen3_0_6b \
     --output "${MBPRIORQ_CHECKPOINT}" \
     --method mbpriorq \
     --refined-block-size 4 \
@@ -24,14 +25,16 @@ if [[ ! -f "${MBPRIORQ_CHECKPOINT}/mbpriorq_ae_prequant_metadata.json" ]]; then
 fi
 
 "${PYTHON}" "${ROOT}/scripts/run_wikitext_ppl.py" \
-  --model "${MODEL_PATH}" \
+  --model "${MODEL_PATH}" --tokenizer "${MODEL_PATH}" \
+  --model-key qwen3_0_6b --backend full_gpu \
   --dataset "${DATASET_PATH}" \
   --method bf16 \
   --num-samples "${NUM_SAMPLES}" \
   --output "${RESULTS}/bf16.json"
 
 "${PYTHON}" "${ROOT}/scripts/run_wikitext_ppl.py" \
-  --model "${MBPRIORQ_CHECKPOINT}" \
+  --model "${MBPRIORQ_CHECKPOINT}" --tokenizer "${MODEL_PATH}" \
+  --model-key qwen3_0_6b --backend full_gpu --weight-source prequant \
   --dataset "${DATASET_PATH}" \
   --method mbpriorq \
   --model-type cloud \

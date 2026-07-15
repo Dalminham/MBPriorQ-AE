@@ -57,6 +57,55 @@ def _first_tensor(output):
 
 
 @torch.no_grad()
+def paper_compatible_full_model_ppl(
+    model,
+    input_ids: torch.Tensor,
+    *,
+    sequence_length: int = 2048,
+    num_samples: int = 0,
+    device: str = "cuda",
+    progress: bool = True,
+) -> tuple[float, int, float]:
+    """Evaluate contiguous WikiText2 windows with the whole model resident."""
+    if input_ids.ndim != 2 or input_ids.shape[0] != 1:
+        raise ValueError(f"Expected token ids with shape [1, tokens], got {tuple(input_ids.shape)}")
+    available = input_ids.shape[1] // sequence_length
+    windows = available if num_samples == 0 else min(int(num_samples), available)
+    if windows <= 0:
+        raise ValueError(
+            f"Dataset has {input_ids.shape[1]} tokens, fewer than one {sequence_length}-token window"
+        )
+
+    dev = torch.device(device)
+    model = model.to(dev)
+    model.eval()
+    original_use_cache = getattr(model.config, "use_cache", None)
+    if original_use_cache is not None:
+        model.config.use_cache = False
+    loss_function = nn.CrossEntropyLoss()
+    nll = torch.zeros((), dtype=torch.float32, device=dev)
+    for window in range(windows):
+        start = window * sequence_length
+        batch = input_ids[:, start : start + sequence_length].to(dev)
+        logits = model(batch, use_cache=False).logits
+        if not torch.isfinite(logits).all():
+            raise FloatingPointError(f"Non-finite logits in PPL window {window}")
+        shifted_logits = logits[:, :-1, :].contiguous()
+        shifted_labels = batch[:, 1:]
+        loss = loss_function(
+            shifted_logits.view(-1, shifted_logits.shape[-1]),
+            shifted_labels.reshape(-1),
+        )
+        nll += loss.float() * (sequence_length - 1)
+        if progress:
+            print(f"[ppl] window {window + 1}/{windows}", flush=True)
+    if original_use_cache is not None:
+        model.config.use_cache = original_use_cache
+    total_nll = float(nll.item())
+    return math.exp(total_nll / float(windows * sequence_length)), windows, total_nll
+
+
+@torch.no_grad()
 def paper_compatible_by_layer_ppl(
     model,
     input_ids: torch.Tensor,
@@ -65,7 +114,7 @@ def paper_compatible_by_layer_ppl(
     num_samples: int = 0,
     device: str = "cuda",
     progress: bool = True,
-) -> tuple[float, int]:
+) -> tuple[float, int, float]:
     """Reproduce the paper's contiguous-window, layer-wise PPL calculation.
 
     The denominator intentionally remains ``windows * sequence_length`` to
@@ -184,5 +233,6 @@ def paper_compatible_by_layer_ppl(
         nll += loss.float() * (sequence_length - 1)
 
     model.config.use_cache = original_use_cache
-    ppl = math.exp(float(nll.item()) / float(windows * sequence_length))
-    return ppl, windows
+    total_nll = float(nll.item())
+    ppl = math.exp(total_nll / float(windows * sequence_length))
+    return ppl, windows, total_nll

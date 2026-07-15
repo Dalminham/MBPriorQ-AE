@@ -117,6 +117,23 @@ class QuantizationTests(unittest.TestCase):
         self.assertEqual(result.shape, data.shape)
         self.assertTrue(math.isfinite(float(result.float().sum())))
 
+    def test_cloud_prior_accepts_single_token_decode_step(self):
+        quantizer = MBPriorQ_Quantizer(quantizer_args())
+        calibration = torch.randn(1, 8, 32)
+        decode_step = torch.randn(1, 1, 32)
+        quantizer.fake_quantize_activation(
+            calibration,
+            name="model.layers.0.self_attn.q_proj",
+            tensor_shape=(32, 32),
+        )
+        result = quantizer.fake_quantize_activation(
+            decode_step,
+            name="model.layers.0.self_attn.q_proj",
+            tensor_shape=(32, 32),
+        )
+        self.assertEqual(result.shape, decode_step.shape)
+        self.assertTrue(torch.isfinite(result).all())
+
 
 if __name__ == "__main__":
     unittest.main()

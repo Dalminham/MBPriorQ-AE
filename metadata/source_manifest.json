@@ -29,6 +29,7 @@
       "name": "Qwen3-0.6B importance matrix",
       "path": "data/imatrix/Qwen_Qwen3-0.6B.imatrix",
       "source_model": "Qwen/Qwen3-0.6B",
+      "source_url": "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B.imatrix",
       "sha256": "86c939f5185eff29eb6f94fec0c37b95b5614119709f8f78d1cc66127d99a386",
       "bytes": 1153382,
       "contains_model_weights": false
@@ -52,9 +53,13 @@
   ],
   "validation": {
     "software_source_equivalence": "passed for all imported modes and refined block sizes",
-    "software_unit_tests": "10 passed",
+    "software_unit_tests": "14 passed",
     "tensor_smoke": "passed",
     "qwen3_0_6b_core_accuracy": "passed, 146 windows",
+    "qwen3_0_6b_online_prequant_equivalence": "passed, exact one-window MBPriorQ PPL and NLL",
+    "model_suite_preflight": "passed, all 19 model paths and streamed structures",
+    "qwen3_vl_streamed_bf16": "passed, 94 language layers and one WikiText2 window",
+    "downstream_qwen3_0_6b_smoke": "passed, BF16 and MBPriorQ on GSM8K, MMLU, and MMLU-Pro",
     "qwen3_0_6b_activation_attribution": "passed, 6 MBPriorQ/BF16 rows",
     "qwen3_0_6b_granularity_ablation": "passed, 3 rows",
     "hardware_module_functional_tests": "passed, 5 expected CSVs",

@@ -1,188 +1,196 @@
 # MBPriorQ Artifact Evaluation
 
-This repository contains the curated artifact for:
+This repository is the self-contained artifact for:
 
-> Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization
-> for Robust LLM Inference Across Model Families
+> **Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization
+> for Robust LLM Inference Across Model Families**
 
-It packages the paper-relevant MBPriorQ software, curated SpinalHDL accelerator
-sources, functional simulations, and stable experiment entry points. It does not include unrelated EasyLLM
-features, model weights, commercial EDA material, or reproductions of
-comparison methods.
+It contains only the author-generated MBPriorQ software, paper experiment
+drivers, SpinalHDL design sources, and functional simulations. Model weights
+and datasets are downloaded separately. Implementations of comparison methods
+and all commercial synthesis material are intentionally excluded.
 
-## Status And Evidence Levels
+## What Can Be Reproduced?
 
-The source closure and representative workflows have been assembled and tested.
-The remaining public-release blockers are the final public repository, release
-tag, and Zenodo DOI. See
-[`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
-Author-generated source in this artifact is released under
-[`Apache-2.0`](LICENSE); retained external notices remain separately identified
-under [`third_party/`](third_party/README.md).
+| Paper location | Public entry point | Scope |
+|---|---|---|
+| **Table 2**, model-family WikiText2 PPL | [`experiments/model_family_ppl/run_paper16.sh`](experiments/model_family_ppl/README.md) | One command runs BF16 and MBPriorQ for the original 16-model suite. The revision's 19-model suite is an optional extension. |
+| **Table 2**, representative row | [`experiments/core_accuracy/run.sh`](experiments/core_accuracy/README.md) | Full Qwen3-0.6B BF16/MBPriorQ reproduction over 146 windows. |
+| **Table 3**, downstream accuracy | [`experiments/downstream_benchmarks/run.sh`](experiments/downstream_benchmarks/README.md) | GSM8K, MMLU, and MMLU-Pro for Qwen3-0.6B and Qwen3-14B. |
+| **Table 5**, accuracy attribution | [`experiments/activation_attribution/run.sh`](experiments/activation_attribution/README.md) | All rows for both Qwen3-0.6B and Llama2-7B. |
+| **Table 6**, refined granularity | [`experiments/granularity_ablation/run.sh`](experiments/granularity_ablation/README.md) | 16-to-{8,4,2} for both Qwen3-0.6B and Llama2-7B. |
+| **Sec. 6**, accelerator dataflow | [`scripts/run_hardware_all.sh`](hardware/README.md) | Functional SpinalHDL simulation of metadata, MultiMSA, shared-FPU, synchronization, and packet paths. |
+| AE execution validation | [`experiments/offload_equivalence/run.sh`](experiments/offload_equivalence/README.md) | Confirms that full-GPU and layer-streamed PPL produce the same BF16/MBPriorQ NLL. |
 
-Results are deliberately separated into two evidence levels:
+The exact claim boundary is in [`docs/AE_SCOPE.md`](docs/AE_SCOPE.md). Hardware
+simulation does **not** claim to reproduce area, power, or comparison-accelerator
+speedup.
 
-| Level | Meaning |
-|---|---|
-| **Reproduced** | A public workflow regenerates and validates the result. |
-| **Functional** | A bounded workflow validates the same mechanism and output contract. |
+## Ten-Minute Start
 
-The core Results Reproduced target is Qwen3-0.6B on WikiText2. Open hardware
-simulation establishes the functionality of MBPriorQ's scale path, scheduler,
-MultiMSA, shared FPU pool, output synchronization, and public packet interface.
-It is not presented as a reproduction of paper-level speedup, area, or power.
+1. Create the environment and install the local package:
 
-## Repository Map
+   ```bash
+   conda env create -f environment/software.yml
+   conda activate mbpriorq-ae
+   python -m pip install -e software
+   ```
 
-- [`docs/AE_SCOPE.md`](docs/AE_SCOPE.md): claim-to-evidence map and exact
-  reproduction boundary.
-- [`docs/PROVENANCE.md`](docs/PROVENANCE.md): pinned source revisions,
-  adaptations, and third-party boundaries.
-- [`docs/VALIDATION.md`](docs/VALIDATION.md): completed software/hardware
-  validation and remaining release gates.
-- [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md): publication and
-  clean-room validation gates.
-- [`docs/ZENODO_RELEASE.md`](docs/ZENODO_RELEASE.md): DOI reservation, final
-  tag, archive, and publication order.
-- [`environment/`](environment/README.md): software and hardware environments.
-- [`software/`](software/README.md): curated MBPriorQ implementation.
-- [`experiments/`](experiments/README.md): stable PPL and ablation entry points.
-- [`hardware/`](hardware/README.md): curated SpinalHDL source and functional simulations.
-- [`evidence/`](evidence/README.md): expected outputs from the public workflows.
-- [`artifact_appendix/`](artifact_appendix/README.md): two-page AE appendix.
+2. Run tests that require no model download:
 
-## Requirements
+   ```bash
+   ./scripts/run_smoke.sh
+   python -m pytest -q software/tests
+   ```
 
-The functional software checks need a Linux x86-64 host with at least four CPU
-cores and approximately 8 GB RAM. The core PPL reproduction needs an NVIDIA GPU
-with at least 8 GB VRAM, 16 GB system RAM, and about 10 GB free disk space for
-the public model, dataset cache, and generated fake-quantized checkpoints.
+3. Download `Qwen/Qwen3-0.6B` and WikiText2, then run a one-window GPU check:
 
-The open hardware workflow needs Java 17, sbt 1.10.2, Verilator 4.034 or newer,
-GNU Make, and a C++ compiler. The validated machine used an AMD Ryzen 7 9800X3D
-(8 cores/16 threads), 186 GiB RAM, and an NVIDIA RTX 5090 with 32 GiB VRAM.
-This is the tested configuration, not the minimum requirement.
+   ```bash
+   MODEL_PATH=/path/to/Qwen3-0.6B \
+   DATASET_PATH=/path/to/wikitext-2-raw-v1 \
+   ./experiments/core_accuracy/run_quick.sh
+   ```
 
-## Installation
+4. Validate that offloading does not change the result:
 
-Create the software environment:
+   ```bash
+   MODEL_PATH=/path/to/Qwen3-0.6B \
+   DATASET_PATH=/path/to/wikitext-2-raw-v1 \
+   ./experiments/offload_equivalence/run_quick.sh
+   ```
 
-```bash
-conda env create -f environment/software.yml
-conda activate mbpriorq-ae
-python -m pip install -e software
+Generated checkpoints, logs, and result JSONs go to ignored `local_runs/`.
+
+## Required Models And Imatrix Rule
+
+The artifact never redistributes model weights. Model identifiers and local
+directory aliases are listed in
+[`experiments/model_family_ppl/models.json`](experiments/model_family_ppl/models.json).
+
+**Only Qwen3-0.6B uses an imatrix.** Its weight quantization requires:
+
+```text
+https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B.imatrix
 ```
 
-For open hardware simulation, follow
-[`environment/README.md`](environment/README.md) to create the separate
-`mbpriorq-ae-hw` environment and install sbt.
+The checked file is already included at
+[`data/imatrix/Qwen_Qwen3-0.6B.imatrix`](data/imatrix/README.md). Suite and
+checkpoint scripts reject both a missing Qwen3-0.6B imatrix and an imatrix
+supplied to any other model. Llama, the remaining Qwen models, DeepSeek, and
+Mixtral do **not** consume this file.
 
-## Functional Checks
+## Full Table 2 Sweep
 
-Run the deterministic tensor/metadata smoke and Python unit tests:
+Place model directories below one or more roots. The runner recursively finds
+the aliases in `models.json`, validates every path before starting, updates
+`observation.md` after each row, and resumes completed JSON results.
 
 ```bash
-./scripts/run_smoke.sh
-python -m unittest discover -s software/tests -v
+MODEL_ROOTS=/models/huggingface:/models/modelscope \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
+./experiments/model_family_ppl/run_paper16.sh \
+  --dataset "${DATASET_PATH}"
 ```
 
-Run the source-equivalence check when the pinned EasyLLM source tree is locally
-available:
+The original 16-model suite produces 32 rows. To include Qwen2.5-72B,
+Qwen3-Next-80B-A3B, and the text-only language path of
+Qwen3-VL-235B-A22B:
 
 ```bash
-python scripts/compare_software_source.py --easyllm /path/to/EasyLLM
+MODEL_ROOTS=/models/huggingface:/models/modelscope \
+./experiments/model_family_ppl/run_table2_19.sh \
+  --dataset /path/to/wikitext-2-raw-v1
 ```
 
-The smoke completes in under a minute on a typical desktop. It checks regular
-and refined 16-value micro-block behavior, independent weight/activation masks,
-the three-extra-scale rule, and effective-bit-width accounting.
+Qwen3-0.6B uses the true full-GPU path. Other entries use safetensors
+layer streaming so the complete model need not fit VRAM. Qwen3-VL explicitly
+instantiates only its language model because Table 2 evaluates text-only
+WikiText2. See the model-family README for explicit path overrides and
+resource notes. A full run validates each observed PPL against the rounded
+paper value; `--num-samples 1` is only a backend smoke and skips that numerical
+claim.
 
-## Core Accuracy Reproduction
+## Two-Model Ablations
 
-Download the public `Qwen/Qwen3-0.6B` checkpoint through Hugging Face and set
-`MODEL_PATH` to its local directory. `DATASET_PATH` can be a local
-`wikitext-2-raw-v1` directory; omitting it lets Hugging Face Datasets download
-the public WikiText2 data.
-
-```bash
-MODEL_PATH=/path/to/Qwen3-0.6B \
-./experiments/core_accuracy/run.sh
-```
-
-The complete run evaluates all 146 contiguous 2048-token windows and validates:
-
-| Method | Expected PPL |
-|---|---:|
-| BF16 | 20.9240 |
-| W4A4 MBPriorQ | 24.2289 |
-
-For an execution-path check using only two windows:
+Both central ablation drivers require Qwen3-0.6B and Llama2-7B, matching the
+paper tables:
 
 ```bash
-MODEL_PATH=/path/to/Qwen3-0.6B \
-./experiments/core_accuracy/run_quick.sh
-```
-
-Generated checkpoints and results are written below ignored `local_runs/` and
-are never included in the release archive. On the validated RTX 5090, cached
-full PPL rows take minutes; a clean run also creates one approximately 1.2 GB
-fake-quantized checkpoint.
-
-## Central Ablations
-
-The following workflows share the checkpoint cache created above:
-
-```bash
-MODEL_PATH=/path/to/Qwen3-0.6B \
+QWEN_MODEL_PATH=/path/to/Qwen3-0.6B \
+LLAMA_MODEL_PATH=/path/to/Llama-2-7b-hf \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
 ./experiments/activation_attribution/run.sh
 
-MODEL_PATH=/path/to/Qwen3-0.6B \
+QWEN_MODEL_PATH=/path/to/Qwen3-0.6B \
+LLAMA_MODEL_PATH=/path/to/Llama-2-7b-hf \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
 ./experiments/granularity_ablation/run.sh
 ```
 
-They reproduce the Qwen3-0.6B rows for activation-prior attribution and
-16-to-{8,4,2} refinement. Each script validates PPL and, where applicable,
-weight/activation effective bit width against its local `expected.csv`. A clean
-combined run is expected to take tens of minutes and use up to roughly 5 GB for
-shared generated checkpoints on the tested machine.
+Llama2 access may require accepting the model license. Llama rows use the
+streamed backend and never use the Qwen imatrix.
 
-## Open Hardware Functional Validation
+## Downstream Benchmarks
 
-After activating the hardware environment, run:
+Table 3 uses the paper protocols: 500 seeded GSM8K test examples, 100 seeded
+MMLU examples, and all 410 MMLU-Pro computer-science examples with five-shot
+CoT prompts. Set the two models and three local dataset directories:
+
+```bash
+QWEN_0_6B_MODEL_PATH=/path/to/Qwen3-0.6B \
+QWEN_14B_MODEL_PATH=/path/to/Qwen3-14B \
+GSM8K_DATASET_PATH=/path/to/gsm8k-kaggle-directory \
+MMLU_DATASET_PATH=/path/to/mmlu-kaggle-directory \
+MMLU_PRO_DATASET_PATH=/path/to/MMLU-Pro \
+./experiments/downstream_benchmarks/run.sh
+```
+
+`run_quick.sh` defaults to one example from each benchmark on Qwen3-0.6B.
+The full workflow is long because the paper permits up to 2048 generated
+tokens per question and evaluates both BF16 and MBPriorQ. On resume, BF16 rows
+are skipped directly; MBPriorQ replays completed prompts before continuing so
+the online activation-prior state is identical to an uninterrupted run.
+
+## Hardware Functional Validation
+
+Create the separate hardware environment described in
+[`environment/README.md`](environment/README.md), then run:
 
 ```bash
 ./scripts/run_hardware_modules.sh
 ./scripts/run_hardware_system.sh
-```
-
-The first command validates five actual SpinalHDL modules: scale reconstruction,
-metadata-before-matrix scheduling, the shared FPU pool, regular/refined MultiMSA
-execution, and matrix/dequant-factor joining. The second elaborates the public
-16-lane accelerator top and verifies a mixed regular/refined 1024-bit packet
-stream through output packetization. On the validated host, a warm module run
-took about 30 seconds and the final system build took 8 minutes 18 seconds.
-Generated CSVs are compared with
-[`evidence/hardware/`](evidence/hardware/README.md). Run both with:
-
-```bash
+# or both:
 ./scripts/run_hardware_all.sh
 ```
 
-## Release Audit
+These tests elaborate the actual SpinalHDL and compare functional CSV traces
+with [`evidence/hardware/`](evidence/hardware/README.md).
 
-Run the non-release audit at any time:
+## Resource Guide
 
-```bash
-python scripts/check_release.py
-```
+| Workflow | Practical requirement |
+|---|---|
+| Python tests and tensor smoke | Linux CPU, about 8 GB RAM |
+| Qwen3-0.6B full-GPU quick/full PPL | CUDA GPU with at least 8 GB free VRAM |
+| Llama2-7B streamed PPL | GPU large enough for one decoder layer, plus CPU RAM for hidden-state windows |
+| 16/19-model sweep | All public checkpoints, substantial SSD capacity, and long runtime; only one decoder layer is resident on GPU, while hidden windows and weight-quantization temporaries use CPU RAM |
+| Qwen3-VL language-side extension | About 439 GB source checkpoint storage on the tested release; BF16 one-window streamed validation took 457 s, while a full MBPriorQ tensor-level quantization run is a day-scale experiment |
+| Qwen3-14B downstream | `device_map=auto`; about 30 GB checkpoint storage plus generated MBPriorQ checkpoint |
+| SpinalHDL simulation | Java 17, sbt 1.10.2, Verilator, GNU Make, C++ compiler |
 
-The strict audit additionally requires the approved license, final
-`CITATION.cff`, final `.zenodo.json`, appendix, and release checksum manifest:
+The validated host used an RTX 5090 (32 GiB), 186 GiB usable RAM, and Linux
+x86-64. This is the tested configuration, not a hidden requirement.
 
-```bash
-python scripts/check_release.py --strict
-```
+## Repository Guide
 
-The Zenodo archive must be generated from the evaluated Git tag. It must not
-contain model weights, access tokens, workstation paths, proprietary PDK/library
-files, commercial EDA data, or reproductions of comparison methods.
+- [`docs/AE_SCOPE.md`](docs/AE_SCOPE.md): paper claim and evidence map.
+- [`docs/VALIDATION.md`](docs/VALIDATION.md): what has actually been run.
+- [`docs/PROVENANCE.md`](docs/PROVENANCE.md): source and license boundaries.
+- [`experiments/`](experiments/README.md): all stable experiment entry points.
+- [`software/`](software/README.md): curated quantization/runtime modules.
+- [`hardware/`](hardware/README.md): SpinalHDL source and simulations.
+- [`artifact_appendix/`](artifact_appendix/README.md): AE appendix source.
+
+Before publication, maintainers run `python scripts/check_release.py --strict`.
+The Zenodo archive must not contain checkpoints, datasets, credentials,
+workstation paths, third-party method reproductions, or commercial EDA data.
