@@ -82,8 +82,14 @@ screenshots, and area/power data are also excluded.
 - The non-strict public-release audit passes.
 - `metadata/release_files.sha256` verifies every distributable file but must be
   regenerated after any source or documentation edit.
-- A final clean-archive validation is required after the initial Git commit and
-  again after resolving release metadata.
+- A `git archive` extraction without repository metadata passed the software
+  smoke and all 10 unit tests, all five hardware-module comparisons, the public
+  packet-top comparison, the appendix build, the release audit, and all 103
+  release checksums. This confirms that the candidate does not rely on
+  untracked source files or its original workstation path.
+- The final tagged archive must be checked again after resolving release
+  metadata. This final pass is a release gate, not an unresolved executable
+  artifact issue.
 
 ## Remaining Release Gates
 

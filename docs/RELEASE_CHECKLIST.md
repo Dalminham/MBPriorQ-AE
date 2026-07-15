@@ -46,7 +46,10 @@
 ## Release
 
 - [ ] `python scripts/check_release.py --strict` passes.
-- [ ] Clean-room validation is run from a fresh clone of the candidate tag.
+- [x] Candidate source closure is validated from a `git archive` extraction
+      without `.git` metadata or access to untracked repository files.
+- [ ] The same clean-archive validation is rerun from the final release tag
+      after license, citation, and DOI metadata are fixed.
 - [ ] Release archive checksum is recorded.
 - [ ] Git tag and Zenodo version agree.
 - [ ] DOI resolves publicly before the final AE submission update.
