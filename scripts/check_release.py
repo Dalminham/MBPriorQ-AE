@@ -105,7 +105,7 @@ def iter_files() -> list[Path]:
         for path in ROOT.rglob("*")
         if path.is_file()
         and path.name not in CHECKSUM_SKIP_NAMES - {"release_files.sha256"}
-        and not any(part in SKIP_PARTS for part in path.parts)
+        and not any(part in SKIP_PARTS for part in path.relative_to(ROOT).parts)
     ]
 
 
