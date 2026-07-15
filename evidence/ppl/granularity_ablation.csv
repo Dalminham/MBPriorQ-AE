@@ -1,0 +1,7 @@
+model,refinement,perplexity,weight_effective_ebw,activation_effective_ebw
+Qwen3-0.6B,16-to-8,24.8590,4.598690,4.704345
+Qwen3-0.6B,16-to-4,24.2289,4.673069,4.994211
+Qwen3-0.6B,16-to-2,23.9532,4.837506,5.613351
+Llama2-7B,16-to-8,5.7714,4.585690,4.662412
+Llama2-7B,16-to-4,5.7510,4.620366,4.863003
+Llama2-7B,16-to-2,5.7412,4.696337,5.281226

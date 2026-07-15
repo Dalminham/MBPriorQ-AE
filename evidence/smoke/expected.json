@@ -1,0 +1,26 @@
+{
+  "activation_metadata": {
+    "effective_ebw": 5.359375,
+    "mask_ebw": 0.0625,
+    "scale_ebw": 1.296875,
+    "total_blocks": 64,
+    "vmb_blocks": 34,
+    "vmb_partition": 0.53125
+  },
+  "input_shape": [
+    8,
+    64
+  ],
+  "mbpriorq_calibration": {
+    "abs_sum": 437.3858337402344,
+    "squared_sum": 604.5250244140625,
+    "sum": 18.2597713470459
+  },
+  "mbpriorq_prior": {
+    "abs_sum": 419.40985107421875,
+    "squared_sum": 536.2540283203125,
+    "sum": -25.553970336914062
+  },
+  "schema_version": 1,
+  "seed": 1308
+}

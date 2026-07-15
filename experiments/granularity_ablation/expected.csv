@@ -1,0 +1,4 @@
+row,perplexity,ppl_tolerance,num_samples,weight_effective_ebw,activation_effective_ebw,ebw_tolerance
+rb8,24.8590,0.0750,146,4.598690,4.704345,0.000010
+rb4,24.2289,0.0750,146,4.673069,4.994211,0.000010
+rb2,23.9532,0.0750,146,4.837506,5.613351,0.000010

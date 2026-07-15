@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Scala / Verilator
+.bsp/
+.metals/
+.scala-build/
+target/
+project/target/
+simWorkspace/
+hardware/spinal/tmp/
+
+# Local models, datasets, and run products
+models/
+datasets/
+checkpoints/
+local_runs/
+outputs/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# EDA products and proprietary libraries
+*.db
+*.alib
+*.svf
+*.ddc
+mapped/
+
+# Editors and operating system
+.idea/
+.vscode/
+.DS_Store
+
+# Standalone appendix build products
+artifact_appendix/ae.aux
+artifact_appendix/ae.fdb_latexmk
+artifact_appendix/ae.fls
+artifact_appendix/ae.log
+artifact_appendix/ae.out
+artifact_appendix/ae.pdf

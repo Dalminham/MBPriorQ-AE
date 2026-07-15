@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "validation_date": "2026-07-14",
+  "model": "Qwen/Qwen3-0.6B",
+  "dataset": "wikitext-2-raw-v1:test",
+  "sequence_length": 2048,
+  "num_samples": 146,
+  "environment": {
+    "python": "3.12.12",
+    "torch": "2.10.0+cu129",
+    "transformers": "4.57.6",
+    "datasets": "4.7.0",
+    "safetensors": "0.7.0",
+    "numpy": "2.2.6",
+    "gpu": "NVIDIA GeForce RTX 5090"
+  },
+  "core_accuracy": {
+    "bf16_perplexity": 20.923949055921444,
+    "mbpriorq_perplexity": 24.228947006667315,
+    "mbpriorq_weight_effective_ebw": 4.673069286325462,
+    "mbpriorq_activation_effective_ebw": 4.994211149478374
+  },
+  "activation_attribution": [
+    {"row": "bf16", "perplexity": 20.923949055921444},
+    {"row": "random_same_ratio", "perplexity": 25.342306079299576, "activation_effective_ebw": 4.994391075784782},
+    {"row": "static", "perplexity": 24.544596035379485, "activation_effective_ebw": 4.683127406653136},
+    {"row": "first2_only", "perplexity": 24.27563545924888, "activation_effective_ebw": 4.966852142270012},
+    {"row": "paper", "perplexity": 24.228947006667315, "activation_effective_ebw": 4.994211149478374},
+    {"row": "full_activation_recompute", "perplexity": 24.356296768554298, "activation_effective_ebw": 4.68340813670207}
+  ],
+  "granularity_ablation": [
+    {"refinement": "16-to-8", "perplexity": 24.859004663849646, "weight_effective_ebw": 4.598689619357543, "activation_effective_ebw": 4.704344965588348},
+    {"refinement": "16-to-4", "perplexity": 24.228947006667315, "weight_effective_ebw": 4.673069286325462, "activation_effective_ebw": 4.994211149478374},
+    {"refinement": "16-to-2", "perplexity": 23.953214229298325, "weight_effective_ebw": 4.837506104857942, "activation_effective_ebw": 5.613350867062817}
+  ]
+}

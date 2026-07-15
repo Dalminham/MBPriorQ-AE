@@ -1,0 +1,52 @@
+# Zenodo Release Checklist
+
+## Blocking Metadata
+
+- [ ] Authors approve the public source license.
+- [ ] Author names, affiliations, ORCIDs (if used), and contact are confirmed.
+- [x] Final paper title and revised abstract are transcribed into metadata drafts.
+- [ ] Confirmed author metadata is promoted from templates to final Zenodo and
+      `CITATION.cff` files.
+- [ ] The HotCRP abstract is replaced with the revised abstract; the removed
+      unsupported end-to-end speedup claim must not remain.
+
+## Source And Licensing
+
+- [x] Curated software source closure and representative PPL integration are
+      imported, provenance-recorded, and source-equivalence tested.
+- [x] Curated hardware source closure is imported and provenance-recorded.
+- [x] The only retained third-party file is the Qwen model license needed for
+      the external model dependency.
+- [x] No unrelated baseline reproduction is bundled.
+- [x] No model weights, datasets restricted from redistribution, PDKs, `.db`
+      libraries, credentials, or workstation-specific paths are present.
+- [x] No commercial EDA inputs, outputs, screenshots, or area/power data are
+      bundled.
+
+## Executable Workflows
+
+- [x] `scripts/run_smoke.sh` passes in the isolated validation environment.
+- [x] Representative Qwen3-0.6B accuracy workflow passes all 146 windows.
+- [x] Activation-attribution and refined-granularity workflows pass.
+- [x] Metadata EBW accounting and deterministic tensor fixtures pass.
+- [x] Hardware module and public packet-top functional simulations pass.
+- [x] Every result claimed in the final AE scope has an executable MBPriorQ
+      reproduction or bounded functional-validation path.
+
+## Documentation
+
+- [x] Root README gives setup, runtime, disk, hardware, and expected outputs.
+- [x] Every public experiment has one command, expected runtime, expected result, and
+      a troubleshooting section.
+- [x] Functional, core, and extended workflows are not conflated.
+- [x] The artifact appendix compiles in the paper's two-column format within
+      the two-page limit and without overfull lines.
+- [ ] Final HotCRP key results and dependency fields match `docs/AE_SCOPE.md`.
+
+## Release
+
+- [ ] `python scripts/check_release.py --strict` passes.
+- [ ] Clean-room validation is run from a fresh clone of the candidate tag.
+- [ ] Release archive checksum is recorded.
+- [ ] Git tag and Zenodo version agree.
+- [ ] DOI resolves publicly before the final AE submission update.

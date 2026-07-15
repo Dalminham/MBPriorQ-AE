@@ -1,0 +1,9 @@
+cycle,block_index,path,max_busy_fpus,accepted_blocks,completed_blocks
+9,0,regular,16,8,8
+10,1,regular,16,8,8
+11,2,refined,16,8,8
+13,3,refined,16,8,8
+14,4,regular,16,8,8
+17,5,refined,16,8,8
+18,6,regular,16,8,8
+21,7,refined,16,8,8

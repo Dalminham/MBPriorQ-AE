@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this artifact, please cite the MBPriorQ paper and artifact release."
+title: "MBPriorQ Artifact Evaluation"
+type: software
+version: "TO_BE_CONFIRMED"
+date-released: "TO_BE_CONFIRMED"
+license: "TO_BE_CONFIRMED"
+authors:
+  - family-names: Wei
+    given-names: Yijian
+  - family-names: Yang
+    given-names: Tianchang
+  - family-names: Tao
+    given-names: Sicheng
+  - family-names: Hao
+    given-names: Miao
+  - family-names: Liu
+    given-names: Tianyi
+  - family-names: Zhang
+    given-names: Tingting
+  - family-names: Zhang
+    given-names: Fuxin
+  - family-names: Wang
+    given-names: Jian
+repository-code: "TO_BE_CONFIRMED"
+doi: "TO_BE_ASSIGNED"
+preferred-citation:
+  type: conference-paper
+  title: "Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families"
+  conference:
+    name: "59th IEEE/ACM International Symposium on Microarchitecture"
+    alias: "MICRO 2026"
+  year: 2026
+  authors:
+    - family-names: Wei
+      given-names: Yijian
+    - family-names: Yang
+      given-names: Tianchang
+    - family-names: Tao
+      given-names: Sicheng
+    - family-names: Hao
+      given-names: Miao
+    - family-names: Liu
+      given-names: Tianyi
+    - family-names: Zhang
+      given-names: Tingting
+    - family-names: Zhang
+      given-names: Fuxin
+    - family-names: Wang
+      given-names: Jian

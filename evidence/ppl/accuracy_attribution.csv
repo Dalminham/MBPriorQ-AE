@@ -1,0 +1,7 @@
+model,row,perplexity,weight_effective_ebw,activation_effective_ebw
+Qwen3-0.6B,BF16,20.9240,,
+Qwen3-0.6B,Random same-ratio,25.3423,4.673069,4.994391
+Qwen3-0.6B,Static first-batch,24.5446,4.673069,4.683127
+Qwen3-0.6B,First-2-token only,24.2756,4.673069,4.966852
+Qwen3-0.6B,MBPriorQ,24.2289,4.673069,4.994211
+Qwen3-0.6B,Full-activation recompute,24.3563,4.673069,4.683410

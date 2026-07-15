@@ -1,0 +1,2 @@
+regular_vpu_issue_cycle,refined_vpu_issue_cycle,first_multimsa_issue_cycle,vpu_masks,multimsa_issue_order,output_block_order,output_beats_by_block
+6,8,14,"[0x5,0xa]","[0,1,2,3]","[0,1,2,3]","[4,16,4,16]"

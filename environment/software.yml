@@ -1,0 +1,13 @@
+name: mbpriorq-ae
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - datasets==4.7.0
+      - numpy==2.2.6
+      - safetensors==0.7.0
+      - torch==2.10.0
+      - transformers==4.57.6
+      - -e ./software

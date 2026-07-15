@@ -1,0 +1,3 @@
+case,path,physical_lanes,first_partial_cycle,done_cycle,partial_count,sub_block_indices
+regular,regular,4,19,20,1,"[0]"
+refined,refined,4,7,11,4,"[0,1,2,3]"
