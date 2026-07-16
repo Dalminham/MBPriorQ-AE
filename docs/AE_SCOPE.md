@@ -4,9 +4,10 @@
 
 The artifact separates three levels:
 
-1. **Full reproduction** runs the paper protocol and validates paper values.
-2. **Extended reproduction** exposes the complete workflow but is optional due
-   to model access, storage, or runtime.
+1. **Lightweight paper reproduction** runs the complete paper protocol on a
+   bounded model and validates the reported values.
+2. **Complete long workflow** exposes every row of a paper table but may require
+   substantial model access, storage, or runtime.
 3. **Functional validation** checks a mechanism or execution contract at
    bounded scale and is not presented as a paper result.
 
@@ -18,7 +19,7 @@ the artifact.
 
 | ID | Paper location | Public AE path | Coverage |
 |---|---|---|---|
-| KR1 | Table 2, Sec. 7.2 | `experiments/core_accuracy/`, `experiments/model_family_ppl/` | Qwen3-0.6B is the default full reproduction. One-click BF16/MBPriorQ drivers expose the original 16-model and revised 19-model sweeps as extended reproduction. |
+| KR1 | Table 2, Sec. 7.2 | `experiments/qwen3_0_6b_smoke_test/`, `experiments/table2_ppl/` | Qwen3-0.6B is the lightweight model-level reproduction; one command exposes all 19 Table 2 models under BF16 and MBPriorQ as the complete long workflow. |
 | KR2 | Table 3, Sec. 7.2 | `experiments/downstream_benchmarks/` | BF16 and MBPriorQ GSM8K/MMLU/MMLU-Pro workflows for Qwen3-0.6B and Qwen3-14B. |
 | KR3 | Table 5, Sec. 7.3 | `experiments/activation_attribution/` | Full attribution matrix for Qwen3-0.6B and Llama2-7B. |
 | KR4 | Table 6, Sec. 7.3 | `experiments/granularity_ablation/` | 16-to-{8,4,2} PPL and EBW for Qwen3-0.6B and Llama2-7B. |

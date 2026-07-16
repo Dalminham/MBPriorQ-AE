@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "key": "llama2_7b",
+      "label": "Llama2-7B",
+      "hub_id": "meta-llama/Llama-2-7b-hf",
+      "aliases": ["Llama-2-7b-hf"],
+      "model_type": "cloud",
+      "backend": "streamed",
+      "bf16_ppl": 5.47,
+      "mbpriorq_ppl": 5.76
+    },
+    {
+      "key": "llama2_13b",
+      "label": "Llama2-13B",
+      "hub_id": "meta-llama/Llama-2-13b-hf",
+      "aliases": ["Llama-2-13b-hf"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 4.88,
+      "mbpriorq_ppl": 5.05
+    },
+    {
+      "key": "llama3_1_8b",
+      "label": "Llama3.1-8B",
+      "hub_id": "meta-llama/Llama-3.1-8B",
+      "aliases": ["Llama-3.1-8B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 6.23,
+      "mbpriorq_ppl": 6.87
+    },
+    {
+      "key": "llama3_2_1b",
+      "label": "Llama3.2-1B",
+      "hub_id": "meta-llama/Llama-3.2-1B",
+      "aliases": ["Llama-3.2-1B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 9.74,
+      "mbpriorq_ppl": 11.35
+    },
+    {
+      "key": "llama3_2_3b",
+      "label": "Llama3.2-3B",
+      "hub_id": "meta-llama/Llama-3.2-3B",
+      "aliases": ["Llama-3.2-3B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 7.80,
+      "mbpriorq_ppl": 8.48
+    },
+    {
+      "key": "llama3_3_70b",
+      "label": "Llama3.3-70B-Instruct",
+      "hub_id": "meta-llama/Llama-3.3-70B-Instruct",
+      "aliases": ["Llama-3.3-70B-Instruct"],
+      "model_type": "cloud",
+      "backend": "streamed",
+      "bf16_ppl": 3.86,
+      "mbpriorq_ppl": 4.52
+    },
+    {
+      "key": "qwen2_5_0_5b",
+      "label": "Qwen2.5-0.5B",
+      "hub_id": "Qwen/Qwen2.5-0.5B",
+      "aliases": ["Qwen2.5-0.5B"],
+      "model_type": "cloud",
+      "backend": "streamed",
+      "bf16_ppl": 13.05,
+      "mbpriorq_ppl": 16.03
+    },
+    {
+      "key": "qwen2_5_1_5b",
+      "label": "Qwen2.5-1.5B",
+      "hub_id": "Qwen/Qwen2.5-1.5B",
+      "aliases": ["Qwen2.5-1.5B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 9.26,
+      "mbpriorq_ppl": 10.83
+    },
+    {
+      "key": "qwen2_5_3b",
+      "label": "Qwen2.5-3B",
+      "hub_id": "Qwen/Qwen2.5-3B",
+      "aliases": ["Qwen2.5-3B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 8.02,
+      "mbpriorq_ppl": 9.05
+    },
+    {
+      "key": "qwen2_5_72b",
+      "label": "Qwen2.5-72B",
+      "hub_id": "Qwen/Qwen2.5-72B-Instruct",
+      "aliases": ["Qwen2.5-72B-Instruct", "Qwen2___5-72B-Instruct"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 4.27,
+      "mbpriorq_ppl": 4.63
+    },
+    {
+      "key": "qwen3_0_6b",
+      "label": "Qwen3-0.6B",
+      "hub_id": "Qwen/Qwen3-0.6B",
+      "aliases": ["Qwen3-0.6B"],
+      "model_type": "cloud",
+      "backend": "full_gpu",
+      "requires_imatrix": true,
+      "bf16_ppl": 20.92,
+      "mbpriorq_ppl": 24.24
+    },
+    {
+      "key": "qwen3_4b",
+      "label": "Qwen3-4B",
+      "hub_id": "Qwen/Qwen3-4B",
+      "aliases": ["Qwen3-4B"],
+      "model_type": "cloud",
+      "backend": "streamed",
+      "bf16_ppl": 10.13,
+      "mbpriorq_ppl": 13.91
+    },
+    {
+      "key": "qwen3_8b",
+      "label": "Qwen3-8B",
+      "hub_id": "Qwen/Qwen3-8B",
+      "aliases": ["Qwen3-8B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 9.70,
+      "mbpriorq_ppl": 10.13
+    },
+    {
+      "key": "qwen3_14b",
+      "label": "Qwen3-14B",
+      "hub_id": "Qwen/Qwen3-14B",
+      "aliases": ["Qwen3-14B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 8.63,
+      "mbpriorq_ppl": 8.97
+    },
+    {
+      "key": "qwen3_30b_a3b",
+      "label": "Qwen3-30B-A3B",
+      "hub_id": "Qwen/Qwen3-30B-A3B",
+      "aliases": ["Qwen3-30B-A3B"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 8.69,
+      "mbpriorq_ppl": 9.32
+    },
+    {
+      "key": "qwen3_next_80b_a3b",
+      "label": "Qwen3-Next-80B-A3B",
+      "hub_id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "aliases": ["Qwen3-Next-80B-A3B-Instruct"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 5.75,
+      "mbpriorq_ppl": 6.02
+    },
+    {
+      "key": "qwen3_vl_235b_a22b",
+      "label": "Qwen3-VL-235B-A22B",
+      "hub_id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+      "aliases": ["Qwen3-VL-235B-A22B-Instruct"],
+      "model_type": "edge",
+      "model_family": "qwen3_vl_language",
+      "backend": "streamed",
+      "bf16_ppl": 4.57,
+      "mbpriorq_ppl": 4.85
+    },
+    {
+      "key": "deepseek_v2_lite",
+      "label": "DeepSeek-V2-Lite",
+      "hub_id": "deepseek-ai/DeepSeek-V2-Lite",
+      "aliases": ["DeepSeek-V2-Lite"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 6.30,
+      "mbpriorq_ppl": 6.82
+    },
+    {
+      "key": "mixtral_8x7b",
+      "label": "Mixtral-8x7B",
+      "hub_id": "mistralai/Mixtral-8x7B-v0.1",
+      "aliases": ["Mixtral-8x7B-v0.1", "Mixtral-8x7B-v0.1-HM"],
+      "model_type": "edge",
+      "backend": "streamed",
+      "bf16_ppl": 3.84,
+      "mbpriorq_ppl": 4.30
+    }
+  ]
+}

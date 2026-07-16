@@ -6,7 +6,7 @@
 |---|---|---|---|
 | MBPriorQ software/evaluation | `https://github.com/Dalminham/EasyLLM.git` | branch `MICRO`, commit `e48ba9c618553bf1036d83c9dbed35e30b5ad3ba`, tag `micro-ae-baseline-20260701` | MBPriorQ tensor semantics, checkpoint generation, layer-wise PPL integration, and EBW accounting. |
 | MBPriorQ accelerator | `https://github.com/Dalminham/MBPriorQ-Accelerator.git` | branch `main`, commit `476c7bc9846e377309e93a69d66626cab63b3ddd` | Public-top SpinalHDL design closure and functional simulations. |
-| Revision evidence | MICRO 2026 revision workspace | per-file SHA-256 in artifact manifests | Author-generated expected outputs and the Qwen3-0.6B importance matrix only. |
+| Paper evidence | MICRO 2026 accepted-paper workspace | per-file SHA-256 in artifact manifests | Author-generated expected outputs and the Qwen3-0.6B importance matrix only. |
 
 The author-generated source curated into this artifact is released under
 Apache-2.0. This is an explicit license for this artifact and does not alter the

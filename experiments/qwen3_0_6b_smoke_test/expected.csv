@@ -1,0 +1,3 @@
+row,perplexity,tolerance,num_samples
+bf16,20.9240,0.0500,146
+mbpriorq,24.2289,0.0750,146

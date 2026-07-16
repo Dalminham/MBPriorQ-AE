@@ -35,7 +35,7 @@ def encode_dataset(tokenizer, dataset) -> torch.Tensor:
     for column in ("text", "sentence", "content"):
         if column in dataset.column_names:
             text = "\n\n".join(dataset[column])
-            return tokenizer(text, return_tensors="pt").input_ids
+            return tokenizer(text, return_tensors="pt", verbose=False).input_ids
     raise ValueError(f"No text column in dataset columns {dataset.column_names}")
 
 

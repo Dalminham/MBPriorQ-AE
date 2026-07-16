@@ -2,8 +2,8 @@
 
 | Directory | Paper result | Full command |
 |---|---|---|
-| [`model_family_ppl/`](model_family_ppl/README.md) | Table 2, 16/19-model BF16 and MBPriorQ PPL | `run_paper16.sh` / `run_table2_19.sh` |
-| [`core_accuracy/`](core_accuracy/README.md) | Table 2, Qwen3-0.6B representative row | `run.sh` |
+| [`table2_ppl/`](table2_ppl/README.md) | Table 2, all 19 models under BF16 and MBPriorQ | `run.sh` |
+| [`qwen3_0_6b_smoke_test/`](qwen3_0_6b_smoke_test/README.md) | Lightweight model-level BF16/MBPriorQ reproduction | `run.sh` / `run_quick.sh` |
 | [`downstream_benchmarks/`](downstream_benchmarks/README.md) | Table 3 | `run.sh` |
 | [`activation_attribution/`](activation_attribution/README.md) | Table 5, both models | `run.sh` |
 | [`granularity_ablation/`](granularity_ablation/README.md) | Table 6, both models | `run.sh` |

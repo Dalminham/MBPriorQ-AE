@@ -48,10 +48,10 @@ low-overhead hardware implementation.
 
 ## Key Results To Be Reproduced
 
-1. **Representative W4A4 accuracy (Table 2):** reproduce the Qwen3-0.6B
+1. **Lightweight W4A4 model reproduction (Table 2):** reproduce the Qwen3-0.6B
    WikiText2 rows for BF16 and MBPriorQ over all 146 contiguous 2048-token
    windows. Expected PPL is 20.9240 and 24.2289, respectively.
-2. **Central ablations (Tables 5-6):** reproduce the Qwen3-0.6B
+2. **Central ablations (Tables 5-6):** reproduce the Qwen3-0.6B and Llama2-7B
    activation-prior attribution and 16-to-{8,4,2} refined-granularity rows,
    including PPL and effective-bit-width accounting.
 3. **Hardware functionality (Sec. 6):** validate the retained SpinalHDL modules
@@ -63,7 +63,7 @@ low-overhead hardware implementation.
 ## Hardware Dependencies
 
 The functional software workflow needs a Linux x86-64 machine with at least 4
-CPU cores and approximately 8 GB RAM. The representative PPL reproduction needs
+CPU cores and approximately 8 GB RAM. The lightweight PPL reproduction needs
 an NVIDIA CUDA GPU with at least 8 GB free VRAM, at least 16 GB system RAM, and
 approximately 10 GB free disk space. Open hardware simulation is recommended on
 an 8-core host with 16 GB RAM and 10 GB temporary disk space; it does not need a

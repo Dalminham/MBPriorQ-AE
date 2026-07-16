@@ -14,8 +14,8 @@ and all commercial synthesis material are intentionally excluded.
 
 | Paper location | Public entry point | Scope |
 |---|---|---|
-| **Table 2**, model-family WikiText2 PPL | [`experiments/model_family_ppl/run_paper16.sh`](experiments/model_family_ppl/README.md) | One command runs BF16 and MBPriorQ for the original 16-model suite. The revision's 19-model suite is an optional extension. |
-| **Table 2**, representative row | [`experiments/core_accuracy/run.sh`](experiments/core_accuracy/README.md) | Full Qwen3-0.6B BF16/MBPriorQ reproduction over 146 windows. |
+| **Table 2**, model-family WikiText2 PPL | [`experiments/table2_ppl/run.sh`](experiments/table2_ppl/README.md) | One command runs all 19 models under BF16 and MBPriorQ. |
+| Lightweight model smoke | [`experiments/qwen3_0_6b_smoke_test/run.sh`](experiments/qwen3_0_6b_smoke_test/README.md) | Reproduces the Qwen3-0.6B BF16/MBPriorQ row without large-model storage or offload requirements. |
 | **Table 3**, downstream accuracy | [`experiments/downstream_benchmarks/run.sh`](experiments/downstream_benchmarks/README.md) | GSM8K, MMLU, and MMLU-Pro for Qwen3-0.6B and Qwen3-14B. |
 | **Table 5**, accuracy attribution | [`experiments/activation_attribution/run.sh`](experiments/activation_attribution/README.md) | All rows for both Qwen3-0.6B and Llama2-7B. |
 | **Table 6**, refined granularity | [`experiments/granularity_ablation/run.sh`](experiments/granularity_ablation/README.md) | 16-to-{8,4,2} for both Qwen3-0.6B and Llama2-7B. |
@@ -43,12 +43,12 @@ speedup.
    python -m pytest -q software/tests
    ```
 
-3. Download `Qwen/Qwen3-0.6B` and WikiText2, then run a one-window GPU check:
+3. Download `Qwen/Qwen3-0.6B` and WikiText2, then run a four-window GPU check:
 
    ```bash
    MODEL_PATH=/path/to/Qwen3-0.6B \
    DATASET_PATH=/path/to/wikitext-2-raw-v1 \
-   ./experiments/core_accuracy/run_quick.sh
+   ./experiments/qwen3_0_6b_smoke_test/run_quick.sh
    ```
 
 4. Validate that offloading does not change the result:
@@ -65,7 +65,7 @@ Generated checkpoints, logs, and result JSONs go to ignored `local_runs/`.
 
 The artifact never redistributes model weights. Model identifiers and local
 directory aliases are listed in
-[`experiments/model_family_ppl/models.json`](experiments/model_family_ppl/models.json).
+[`experiments/table2_ppl/models.json`](experiments/table2_ppl/models.json).
 
 **Only Qwen3-0.6B uses an imatrix.** Its weight quantization requires:
 
@@ -74,12 +74,12 @@ https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.
 ```
 
 The checked file is already included at
-[`data/imatrix/Qwen_Qwen3-0.6B.imatrix`](data/imatrix/README.md). Suite and
+[`data/imatrix/Qwen_Qwen3-0.6B.imatrix`](data/imatrix/README.md). Table 2 and
 checkpoint scripts reject both a missing Qwen3-0.6B imatrix and an imatrix
 supplied to any other model. Llama, the remaining Qwen models, DeepSeek, and
 Mixtral do **not** consume this file.
 
-## Full Table 2 Sweep
+## Complete Table 2
 
 Place model directories below one or more roots. The runner recursively finds
 the aliases in `models.json`, validates every path before starting, updates
@@ -87,25 +87,15 @@ the aliases in `models.json`, validates every path before starting, updates
 
 ```bash
 MODEL_ROOTS=/models/huggingface:/models/modelscope \
-DATASET_PATH=/path/to/wikitext-2-raw-v1 \
-./experiments/model_family_ppl/run_paper16.sh \
-  --dataset "${DATASET_PATH}"
-```
-
-The original 16-model suite produces 32 rows. To include Qwen2.5-72B,
-Qwen3-Next-80B-A3B, and the text-only language path of
-Qwen3-VL-235B-A22B:
-
-```bash
-MODEL_ROOTS=/models/huggingface:/models/modelscope \
-./experiments/model_family_ppl/run_table2_19.sh \
+./experiments/table2_ppl/run.sh \
   --dataset /path/to/wikitext-2-raw-v1
 ```
 
+This single command produces the 38 BF16/MBPriorQ rows in the current Table 2.
 Qwen3-0.6B uses the true full-GPU path. Other entries use safetensors
 layer streaming so the complete model need not fit VRAM. Qwen3-VL explicitly
 instantiates only its language model because Table 2 evaluates text-only
-WikiText2. See the model-family README for explicit path overrides and
+WikiText2. See the Table 2 README for explicit path overrides and
 resource notes. A full run validates each observed PPL against the rounded
 paper value; `--num-samples 1` is only a backend smoke and skips that numerical
 claim.
@@ -173,8 +163,8 @@ with [`evidence/hardware/`](evidence/hardware/README.md).
 | Python tests and tensor smoke | Linux CPU, about 8 GB RAM |
 | Qwen3-0.6B full-GPU quick/full PPL | CUDA GPU with at least 8 GB free VRAM |
 | Llama2-7B streamed PPL | GPU large enough for one decoder layer, plus CPU RAM for hidden-state windows |
-| 16/19-model sweep | All public checkpoints, substantial SSD capacity, and long runtime; only one decoder layer is resident on GPU, while hidden windows and weight-quantization temporaries use CPU RAM |
-| Qwen3-VL language-side extension | About 439 GB source checkpoint storage on the tested release; BF16 one-window streamed validation took 457 s, while a full MBPriorQ tensor-level quantization run is a day-scale experiment |
+| Complete 19-model Table 2 | All public checkpoints, substantial SSD capacity, and long runtime; only one decoder layer is resident on GPU, while hidden windows and weight-quantization temporaries use CPU RAM |
+| Qwen3-VL language-side row | About 439 GB source checkpoint storage on the tested setup; BF16 one-window streamed validation took 457 s, while a full MBPriorQ tensor-level quantization run is a day-scale experiment |
 | Qwen3-14B downstream | `device_map=auto`; about 30 GB checkpoint storage plus generated MBPriorQ checkpoint |
 | SpinalHDL simulation | Java 17, sbt 1.10.2, Verilator, GNU Make, C++ compiler |
 
@@ -189,7 +179,10 @@ x86-64. This is the tested configuration, not a hidden requirement.
 - [`experiments/`](experiments/README.md): all stable experiment entry points.
 - [`software/`](software/README.md): curated quantization/runtime modules.
 - [`hardware/`](hardware/README.md): SpinalHDL source and simulations.
-- [`artifact_appendix/`](artifact_appendix/README.md): AE appendix source.
+- [`artifact_appendix/`](artifact_appendix/README.md): appendix source and the
+  paper-plus-appendix build workflow.
+- [`MBPriorQ_AE_Submission.pdf`](MBPriorQ_AE_Submission.pdf): compiled paper
+  followed by the Artifact Appendix, ready for the HotCRP Submission field.
 
 Before publication, maintainers run `python scripts/check_release.py --strict`.
 The Zenodo archive must not contain checkpoints, datasets, credentials,

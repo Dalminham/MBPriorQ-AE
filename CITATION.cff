@@ -8,7 +8,7 @@ license: Apache-2.0
 abstract: >-
   Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware
   W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families.
-  It provides a representative Qwen3-0.6B accuracy reproduction, central
+  It provides a lightweight Qwen3-0.6B model reproduction, central
   ablations, and open SpinalHDL/Verilator functional validation of MBPriorQ's
   hardware mechanisms.
 keywords:

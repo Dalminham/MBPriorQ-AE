@@ -11,8 +11,10 @@ This repository is the public MICRO 2026 artifact, not a development mirror.
   other authors' methods.
 - Do not include commercial EDA inputs, outputs, screenshots, or area/power
   data. The AE hardware scope is open MBPriorQ functional simulation only.
-- A smoke test is not paper evidence. Keep smoke, core, and extended workflows
-  visibly separate.
+- A reduced-sample smoke is not paper evidence. The complete 146-window
+  Qwen3-0.6B smoke is the lightweight paper reproduction. Keep installation
+  checks, reduced-sample checks, complete paper workflows, and hardware
+  functional validation visibly separate.
 - Never mark a workflow complete until it runs cleanly from this repository and
   its expected result is recorded.
 - Use `MultiMSA` consistently.

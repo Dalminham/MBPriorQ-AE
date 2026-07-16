@@ -55,7 +55,7 @@ SKIP_PARTS = {
 }
 FORBIDDEN_SUFFIXES = {".alib", ".db", ".ddc", ".safetensors", ".svf"}
 FORBIDDEN_HARDWARE_SUFFIXES = {".v", ".vh", ".vhd", ".vhdl", ".sv", ".tcl"}
-ALLOWED_BINARY_SUFFIXES = {".imatrix"}
+ALLOWED_BINARY_SUFFIXES = {".imatrix", ".pdf"}
 FORBIDDEN_PATH_PREFIXES = {
     "evidence/dc/",
     "hardware/dc/",
@@ -219,27 +219,29 @@ def audit(strict: bool) -> list[str]:
 
     required = [
         "README.md",
+        "MBPriorQ_AE_Submission.pdf",
         "artifact_appendix/ae.tex",
         "artifact_appendix/ae_body.tex",
         "artifact_appendix/build.sh",
+        "artifact_appendix/build_submission.sh",
         "docs/AE_SCOPE.md",
         "docs/PROVENANCE.md",
         "docs/RELEASE_CHECKLIST.md",
         "environment/software.yml",
         "environment/hardware.yml",
-        "experiments/core_accuracy/run.sh",
-        "experiments/core_accuracy/expected.csv",
+        "experiments/qwen3_0_6b_smoke_test/run.sh",
+        "experiments/qwen3_0_6b_smoke_test/expected.csv",
         "experiments/activation_attribution/run.sh",
         "experiments/activation_attribution/expected.csv",
         "experiments/granularity_ablation/run.sh",
         "experiments/granularity_ablation/expected.csv",
-        "experiments/model_family_ppl/run_paper16.sh",
-        "experiments/model_family_ppl/models.json",
+        "experiments/table2_ppl/run.sh",
+        "experiments/table2_ppl/models.json",
         "experiments/offload_equivalence/run.sh",
         "experiments/downstream_benchmarks/run.sh",
         "experiments/downstream_benchmarks/expected.csv",
         "evidence/ppl/local_validation.json",
-        "scripts/run_ppl_suite.py",
+        "scripts/run_table2_ppl.py",
         "scripts/check_offload_structure.py",
         "scripts/run_downstream_benchmark.py",
         "scripts/validate_downstream_results.py",

@@ -4,7 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${ROOT}"
 
-latexmk -pdf -interaction=nonstopmode -halt-on-error ae.tex
+ARTIFACT_FIRST_PAGE="${ARTIFACT_FIRST_PAGE:-1}"
+for _pass in 1 2; do
+  pdflatex -interaction=nonstopmode -halt-on-error -jobname=ae \
+    "\\def\\ArtifactFirstPage{${ARTIFACT_FIRST_PAGE}}\\input{ae.tex}" >/dev/null
+done
 if grep -q 'Overfull \\hbox' ae.log; then
   echo "Artifact appendix contains an overfull line; inspect ae.log." >&2
   exit 1

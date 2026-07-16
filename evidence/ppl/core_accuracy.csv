@@ -1,3 +1,0 @@
-model,method,perplexity,sequence_length,num_samples
-Qwen3-0.6B,BF16,20.9240,2048,146
-Qwen3-0.6B,W4A4 MBPriorQ,24.2289,2048,146

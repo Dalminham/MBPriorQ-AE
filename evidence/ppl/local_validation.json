@@ -14,7 +14,7 @@
     "numpy": "2.2.6",
     "gpu": "NVIDIA GeForce RTX 5090"
   },
-  "core_accuracy": {
+  "qwen3_0_6b_smoke_test": {
     "bf16_perplexity": 20.923949055921444,
     "mbpriorq_perplexity": 24.228947006667315,
     "mbpriorq_weight_effective_ebw": 4.673069286325462,

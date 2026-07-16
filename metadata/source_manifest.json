@@ -5,7 +5,7 @@
   "paper": {
     "title": "Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families",
     "submission_id": 1308,
-    "revised_pdf_sha256": "1503cb7973da891ebc2ea1d5570213b06b22522d68bdf6fe63a509c6a6e31e16"
+    "paper_pdf_sha256": "1503cb7973da891ebc2ea1d5570213b06b22522d68bdf6fe63a509c6a6e31e16"
   },
   "author_sources": [
     {
@@ -55,9 +55,9 @@
     "software_source_equivalence": "passed for all imported modes and refined block sizes",
     "software_unit_tests": "14 passed",
     "tensor_smoke": "passed",
-    "qwen3_0_6b_core_accuracy": "passed, 146 windows",
+    "qwen3_0_6b_smoke_test": "passed, 146 windows",
     "qwen3_0_6b_online_prequant_equivalence": "passed, exact one-window MBPriorQ PPL and NLL",
-    "model_suite_preflight": "passed, all 19 model paths and streamed structures",
+    "table2_preflight": "passed, all 19 model paths and streamed structures",
     "qwen3_vl_streamed_bf16": "passed, 94 language layers and one WikiText2 window",
     "downstream_qwen3_0_6b_smoke": "passed, BF16 and MBPriorQ on GSM8K, MMLU, and MMLU-Pro",
     "qwen3_0_6b_activation_attribution": "passed, 6 MBPriorQ/BF16 rows",
