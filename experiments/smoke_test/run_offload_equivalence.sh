@@ -34,4 +34,7 @@ for backend in full_gpu streamed; do
     --output "${RESULTS}/mbpriorq__${backend}.json" --quiet
 done
 
-"${PYTHON}" "${ROOT}/software/tools/validate_backend_equivalence.py" --results "${RESULTS}"
+validation=()
+[[ "${NUM_SAMPLES}" != "0" ]] && validation+=(--expected-samples "${NUM_SAMPLES}")
+"${PYTHON}" "${ROOT}/software/tools/validate_backend_equivalence.py" \
+  --results "${RESULTS}" "${validation[@]}"

@@ -12,6 +12,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from validation_common import finite_float, positive_int, require_fields
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = ROOT / "experiments/table2/models.json"
@@ -126,10 +128,14 @@ def _valid_result(path: Path, *, require_metadata: bool = False) -> bool:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    valid = (
-        isinstance(payload.get("perplexity"), (int, float))
-        and int(payload.get("num_samples", 0)) > 0
-    )
+    try:
+        require_fields(payload, ("method", "num_samples", "perplexity", "total_nll"), str(path))
+        positive_int(payload["num_samples"], f"{path}:num_samples")
+        finite_float(payload["perplexity"], f"{path}:perplexity")
+        finite_float(payload["total_nll"], f"{path}:total_nll")
+        valid = True
+    except (TypeError, ValueError):
+        valid = False
     if require_metadata:
         summary = payload.get("activation_ebw_summary")
         valid = valid and isinstance(summary, dict) and all(
@@ -300,7 +306,18 @@ def main():
                 raise SystemExit(
                     f"{state_key} failed with code {completed.returncode}; see {log_path}"
                 )
-            observed = json.loads(output.read_text(encoding="utf-8"))["perplexity"]
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            if not _valid_result(output, require_metadata=(method == "mbpriorq")):
+                raise SystemExit(f"{state_key} produced an invalid result: {output}")
+            if payload["method"] != method or payload.get("model_key") != model["key"]:
+                raise SystemExit(f"{state_key} produced mismatched method/model metadata")
+            if args.num_samples > 0:
+                positive_int(
+                    payload["num_samples"],
+                    f"{state_key}:num_samples",
+                    args.num_samples,
+                )
+            observed = finite_float(payload["perplexity"], f"{state_key}:perplexity")
             expected = model[f"{method}_ppl"]
             difference = abs(observed - expected)
             if args.num_samples == 0 and difference > args.ppl_tolerance:

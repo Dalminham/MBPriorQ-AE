@@ -46,6 +46,8 @@ fi
 VALIDATION_ARGS=()
 if [[ "${NUM_SAMPLES}" == "0" ]]; then
   VALIDATION_ARGS+=(--require-full)
+else
+  VALIDATION_ARGS+=(--expected-samples "${NUM_SAMPLES}")
 fi
 "${PYTHON}" "${ROOT}/software/tools/validate_ppl_results.py" \
   --results "${RESULTS}" \

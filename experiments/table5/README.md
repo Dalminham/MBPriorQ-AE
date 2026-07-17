@@ -17,5 +17,5 @@ no imatrix and runs through the streamed backend. The script reuses one
 identical weights.
 
 Full results are validated against [`expected.csv`](expected.csv): 146 windows
-for Qwen3-0.6B and 166 for Llama2-7B. `run_quick.sh` reduces each row to one
-window and checks execution only.
+for Qwen3-0.6B and 166 for Llama2-7B. `run_quick.sh` checks all six Qwen3-0.6B
+rows with one window; the complete `run.sh` remains the two-model protocol.

@@ -70,12 +70,17 @@ for model_key in ${MODEL_KEYS}; do
   done
 done
 
+read -r -a model_key_args <<< "${MODEL_KEYS}"
+read -r -a benchmark_args <<< "${BENCHMARKS}"
+validation=()
 if [[ "${NUM_EXAMPLES}" == "0" ]]; then
-  read -r -a model_key_args <<< "${MODEL_KEYS}"
-  read -r -a benchmark_args <<< "${BENCHMARKS}"
-  "${PYTHON}" "${ROOT}/software/tools/validate_downstream_results.py" \
-    --output-root "${OUTPUT_ROOT}" \
-    --expected "${ROOT}/experiments/table3/expected.csv" \
-    --model-keys "${model_key_args[@]}" \
-    --benchmarks "${benchmark_args[@]}"
+  validation+=(--require-full)
+else
+  validation+=(--expected-examples "${NUM_EXAMPLES}")
 fi
+"${PYTHON}" "${ROOT}/software/tools/validate_downstream_results.py" \
+  --output-root "${OUTPUT_ROOT}" \
+  --expected "${ROOT}/experiments/table3/expected.csv" \
+  --model-keys "${model_key_args[@]}" \
+  --benchmarks "${benchmark_args[@]}" \
+  "${validation[@]}"

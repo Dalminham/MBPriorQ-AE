@@ -8,12 +8,15 @@ import csv
 import json
 from pathlib import Path
 
+from validation_common import finite_float, positive_int, require_fields
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", required=True)
     parser.add_argument("--expected", required=True)
     parser.add_argument("--require-full", action="store_true")
+    parser.add_argument("--expected-samples", type=int)
     return parser.parse_args()
 
 
@@ -32,6 +35,14 @@ def main():
             failures.append(f"missing result {path}")
             continue
         data = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            require_fields(data, ("method", "num_samples", "perplexity", "total_nll"), name)
+            positive_int(data["num_samples"], f"{name}:num_samples", args.expected_samples)
+            finite_float(data["perplexity"], f"{name}:perplexity")
+            finite_float(data["total_nll"], f"{name}:total_nll")
+        except (TypeError, ValueError) as error:
+            failures.append(str(error))
+            continue
         observed[name] = data
         if args.require_full or data["num_samples"] == int(row["num_samples"]):
             error = abs(float(data["perplexity"]) - float(row["perplexity"]))

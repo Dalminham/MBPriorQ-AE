@@ -3,8 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${PYTHON:-python3}"
-: "${QWEN_MODEL_PATH:?Set QWEN_MODEL_PATH to the public Qwen3-0.6B checkpoint}"
-: "${LLAMA_MODEL_PATH:?Set LLAMA_MODEL_PATH to the public Llama-2-7B checkpoint}"
+MODEL_KEYS="${MODEL_KEYS:-qwen3_0_6b llama2_7b}"
 
 DATASET_PATH="${DATASET_PATH:-wikitext-2-raw-v1}"
 NUM_SAMPLES="${NUM_SAMPLES:-0}"
@@ -26,12 +25,30 @@ run_model() {
   done
 }
 
-run_model qwen3_0_6b "${QWEN_MODEL_PATH}"
-run_model llama2_7b "${LLAMA_MODEL_PATH}"
+model_validation=()
+for model_key in ${MODEL_KEYS}; do
+  case "${model_key}" in
+    qwen3_0_6b)
+      : "${QWEN_MODEL_PATH:?Set QWEN_MODEL_PATH to the public Qwen3-0.6B checkpoint}"
+      run_model qwen3_0_6b "${QWEN_MODEL_PATH}"
+      ;;
+    llama2_7b)
+      : "${LLAMA_MODEL_PATH:?Set LLAMA_MODEL_PATH to the public Llama-2-7B checkpoint}"
+      run_model llama2_7b "${LLAMA_MODEL_PATH}"
+      ;;
+    *) echo "Unsupported MODEL_KEYS entry: ${model_key}" >&2; exit 2 ;;
+  esac
+  model_validation+=(--model-key "${model_key}")
+done
 
 validation=()
-[[ "${NUM_SAMPLES}" == "0" ]] && validation+=(--require-full)
+if [[ "${NUM_SAMPLES}" == "0" ]]; then
+  validation+=(--require-full)
+else
+  validation+=(--expected-samples "${NUM_SAMPLES}")
+fi
 "${PYTHON}" "${ROOT}/software/tools/validate_kv_cache_results.py" \
   --results "${RESULTS}" \
   --expected "${ROOT}/experiments/table8/expected.csv" \
-  --output "${OUTPUT_ROOT}/table8_kv_cache.csv" "${validation[@]}"
+  --output "${OUTPUT_ROOT}/table8_kv_cache.csv" \
+  "${model_validation[@]}" "${validation[@]}"

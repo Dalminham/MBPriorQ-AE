@@ -53,7 +53,11 @@ run_model qwen3_0_6b "${QWEN_MODEL_PATH}"
 run_model llama2_7b "${LLAMA_MODEL_PATH}"
 
 validation=()
-[[ "${NUM_SAMPLES}" == "0" ]] && validation+=(--require-full)
+if [[ "${NUM_SAMPLES}" == "0" ]]; then
+  validation+=(--require-full)
+else
+  validation+=(--expected-samples "${NUM_SAMPLES}")
+fi
 "${PYTHON}" "${ROOT}/software/tools/validate_feature_selection.py" \
   --results "${RESULTS}" \
   --expected "${ROOT}/experiments/table4/expected.csv" \

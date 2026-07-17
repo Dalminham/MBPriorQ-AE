@@ -8,6 +8,8 @@ import csv
 import json
 from pathlib import Path
 
+from validation_common import finite_float, positive_int, require_fields
+
 
 FEATURES = ("std", "diff", "grad", "diff_grad", "std_grad")
 
@@ -19,6 +21,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--require-full", action="store_true")
     parser.add_argument("--tolerance", type=float, default=0.08)
+    parser.add_argument("--expected-samples", type=int)
     args = parser.parse_args()
 
     with Path(args.expected).open(newline="", encoding="utf-8") as handle:
@@ -28,7 +31,10 @@ def main():
     mismatches = []
     for model_key in ("qwen3_0_6b", "llama2_7b"):
         bf16 = json.loads((results / f"{model_key}__bf16.json").read_text(encoding="utf-8"))
-        bf16_ppl = float(bf16["perplexity"])
+        require_fields(bf16, ("num_samples", "perplexity", "total_nll"), f"{model_key}:bf16")
+        positive_int(bf16["num_samples"], f"{model_key}:bf16:num_samples", args.expected_samples)
+        bf16_ppl = finite_float(bf16["perplexity"], f"{model_key}:bf16:perplexity")
+        finite_float(bf16["total_nll"], f"{model_key}:bf16:total_nll")
         summary.append(
             {
                 "model_key": model_key,
@@ -42,9 +48,12 @@ def main():
             payload = json.loads(
                 (results / f"{model_key}__{feature}.json").read_text(encoding="utf-8")
             )
+            require_fields(payload, ("num_samples", "perplexity", "total_nll"), f"{model_key}:{feature}")
+            positive_int(payload["num_samples"], f"{model_key}:{feature}:num_samples", args.expected_samples)
             if payload.get("weight_source") != "none" or payload.get("quantized_weight_count") != 0:
                 mismatches.append(f"{model_key}:{feature} is not activation-isolated W16A4")
-            ppl = float(payload["perplexity"])
+            ppl = finite_float(payload["perplexity"], f"{model_key}:{feature}:perplexity")
+            finite_float(payload["total_nll"], f"{model_key}:{feature}:total_nll")
             relative = (ppl / bf16_ppl - 1.0) * 100.0
             summary.append(
                 {

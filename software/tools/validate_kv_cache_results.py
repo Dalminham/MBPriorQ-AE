@@ -8,6 +8,8 @@ import csv
 import json
 from pathlib import Path
 
+from validation_common import finite_float, positive_int, require_fields
+
 
 METHODS = ("bf16", "nvfp4", "mbpriorq")
 
@@ -20,6 +22,8 @@ def main():
     parser.add_argument("--require-full", action="store_true")
     parser.add_argument("--ppl-tolerance", type=float, default=0.001)
     parser.add_argument("--ebw-tolerance", type=float, default=0.00011)
+    parser.add_argument("--expected-samples", type=int)
+    parser.add_argument("--model-key", action="append", default=[])
     args = parser.parse_args()
 
     with Path(args.expected).open(newline="", encoding="utf-8") as handle:
@@ -28,10 +32,17 @@ def main():
         }
     rows = []
     mismatches = []
-    for model_key in ("qwen3_0_6b", "llama2_7b"):
+    models = args.model_key or ["qwen3_0_6b", "llama2_7b"]
+    for model_key in models:
         for method in METHODS:
             path = Path(args.results) / f"{model_key}__{method}.json"
             payload = json.loads(path.read_text(encoding="utf-8"))
+            require_fields(payload, ("method", "kv_cache_method", "num_samples", "perplexity", "total_nll"), f"{model_key}:{method}")
+            positive_int(payload["num_samples"], f"{model_key}:{method}:chunks", args.expected_samples)
+            ppl = finite_float(payload["perplexity"], f"{model_key}:{method}:perplexity")
+            finite_float(payload["total_nll"], f"{model_key}:{method}:total_nll")
+            if payload["kv_cache_method"] != method:
+                mismatches.append(f"{model_key}:{method} KV-cache method metadata mismatch")
             if payload.get("method") != "bf16" or payload.get("quantized_weight_count") != 0:
                 mismatches.append(f"{model_key}:{method} does not keep Linear weights BF16")
             summary = payload.get("kv_cache_ebw_summary")
@@ -40,7 +51,7 @@ def main():
                 "model_key": model_key,
                 "setting": "W16A16KV16" if method == "bf16" else "W16A16KV4",
                 "method": method,
-                "ppl": float(payload["perplexity"]),
+                "ppl": ppl,
                 "effective_ebw": ebw,
                 "chunks": int(payload["num_samples"]),
             }

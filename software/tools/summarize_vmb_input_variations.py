@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import statistics
 from itertools import combinations
 from pathlib import Path
@@ -39,7 +40,10 @@ def _read_result(path: Path) -> dict:
 
 
 def _miss_percent(payload: dict) -> float:
-    return 100.0 * float(payload["vmb_profile_summary"]["full_miss_rate"])
+    value = 100.0 * float(payload["vmb_profile_summary"]["full_miss_rate"])
+    if not math.isfinite(value) or not 0.0 <= value <= 100.0:
+        raise ValueError(f"Invalid VMB miss rate: {value!r}")
+    return value
 
 
 def _decode_mask(value: str, width: int) -> int:
@@ -138,6 +142,10 @@ def main() -> None:
                 continue
         payloads = {tag: _read_result(path) for tag, path in available.items()}
         for tag, payload in sorted(payloads.items()):
+            ppl = float(payload["perplexity"])
+            if not math.isfinite(ppl) or ppl <= 0.0:
+                mismatches.append(f"{model_key}:{tag} has invalid PPL {ppl!r}")
+                continue
             details.append(
                 {
                     "model_key": model_key,
@@ -146,7 +154,7 @@ def main() -> None:
                     "sequence_length": payload["sequence_length"],
                     "batch_size": payload["batch_size"],
                     "num_samples": payload["num_samples"],
-                    "ppl": payload["perplexity"],
+                    "ppl": ppl,
                     "vmb_miss_rate_pct": _miss_percent(payload),
                     "prior_records": payload["vmb_profile_summary"]["prior_records"],
                 }
@@ -162,7 +170,10 @@ def main() -> None:
             "batch_4",
         }
         segment_tags = sorted(tag for tag in payloads if tag.startswith("segment_seed"))
-        if not required_for_summary.issubset(payloads) or len(segment_tags) < 2:
+        missing_summary = sorted(required_for_summary - set(payloads))
+        if missing_summary or len(segment_tags) < 2:
+            detail = ", ".join(missing_summary) if missing_summary else "fewer than two segments"
+            mismatches.append(f"{model_key} cannot form the summary: {detail}")
             continue
 
         segment_profiles = [
@@ -236,6 +247,11 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(summary)
+
+    if len(summary) != len(models):
+        mismatches.append(
+            f"summary contains {len(summary)} model rows, expected {len(models)}"
+        )
 
     details_output = Path(args.details_output)
     details_output.parent.mkdir(parents=True, exist_ok=True)

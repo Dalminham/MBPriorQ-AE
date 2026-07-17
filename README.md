@@ -40,6 +40,19 @@ The full workflow evaluates all 146 contiguous 2048-token windows. Use
 `run_quick.sh` for a four-window execution check. Generated checkpoints, logs,
 and results are written below the ignored `local_runs/` directory.
 
+## Artifact Validation
+
+Run syntax checks and dependency-light tests with:
+
+```bash
+./validate.sh
+```
+
+`./validate.sh software-quick` exercises every software workflow with reduced
+inputs. It requires the two model paths and five dataset paths documented by
+the experiment READMEs. The three downstream benchmarks use one example each.
+Run `./validate.sh hardware` for the complete SpinalHDL functional regression.
+
 ## Paper Reproduction
 
 | Paper result | Entry point | Coverage |

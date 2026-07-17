@@ -13,4 +13,5 @@ LLAMA_MODEL_PATH=/path/to/Llama-2-7b-hf \
 
 The full workflow evaluates the complete WikiText2 token stream, including its
 final partial chunk, and writes `local_runs/table8/table8_kv_cache.csv`.
-`run_quick.sh` validates one chunk and is not paper evidence.
+`run_quick.sh` validates the three Qwen3-0.6B paths with one chunk; the complete
+`run.sh` remains the two-model protocol.

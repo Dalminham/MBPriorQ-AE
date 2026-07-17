@@ -8,12 +8,16 @@ import csv
 import json
 from pathlib import Path
 
+from validation_common import finite_float, positive_int, require_fields
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", required=True)
     parser.add_argument("--expected", required=True)
     parser.add_argument("--require-full", action="store_true")
+    parser.add_argument("--expected-samples", type=int)
+    parser.add_argument("--row-prefix", action="append", default=[])
     return parser.parse_args()
 
 
@@ -36,6 +40,12 @@ def main():
     result_dir = Path(args.results)
     with Path(args.expected).open(newline="", encoding="utf-8") as handle:
         expected_rows = list(csv.DictReader(handle))
+    if args.row_prefix:
+        expected_rows = [
+            row
+            for row in expected_rows
+            if any(row["row"].startswith(prefix + "_") for prefix in args.row_prefix)
+        ]
 
     failures: list[str] = []
     for row in expected_rows:
@@ -45,6 +55,14 @@ def main():
             failures.append(f"missing result {path}")
             continue
         data = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            require_fields(data, ("method", "num_samples", "perplexity", "total_nll"), name)
+            positive_int(data["num_samples"], f"{name}:num_samples", args.expected_samples)
+            finite_float(data["perplexity"], f"{name}:perplexity")
+            finite_float(data["total_nll"], f"{name}:total_nll")
+        except (TypeError, ValueError) as error:
+            failures.append(str(error))
+            continue
         full_row = int(data["num_samples"]) == int(row["num_samples"])
         if args.require_full and not full_row:
             failures.append(
