@@ -1,0 +1,11 @@
+model_key,feature,relative_ppl_increase_pct,expected_samples
+qwen3_0_6b,std,3.50,146
+qwen3_0_6b,diff,4.50,146
+qwen3_0_6b,grad,10.50,146
+qwen3_0_6b,diff_grad,6.80,146
+qwen3_0_6b,std_grad,6.30,146
+llama2_7b,std,2.12,166
+llama2_7b,diff,2.00,166
+llama2_7b,grad,2.34,166
+llama2_7b,diff_grad,2.07,166
+llama2_7b,std_grad,2.06,166

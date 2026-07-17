@@ -1,15 +1,16 @@
-# Experiment Entry Points
+# Paper Experiments
 
-| Directory | Paper result | Full command |
+| Directory | Paper result | Main output |
 |---|---|---|
-| [`table2_ppl/`](table2_ppl/README.md) | Table 2, all 19 models under BF16 and MBPriorQ | `run.sh` |
-| [`qwen3_0_6b_smoke_test/`](qwen3_0_6b_smoke_test/README.md) | Lightweight model-level BF16/MBPriorQ reproduction | `run.sh` / `run_quick.sh` |
-| [`downstream_benchmarks/`](downstream_benchmarks/README.md) | Table 3 | `run.sh` |
-| [`activation_attribution/`](activation_attribution/README.md) | Table 5, both models | `run.sh` |
-| [`granularity_ablation/`](granularity_ablation/README.md) | Table 6, both models | `run.sh` |
-| [`offload_equivalence/`](offload_equivalence/README.md) | AE backend correctness check | `run.sh` |
+| [`smoke_test/`](smoke_test/README.md) | Lightweight BF16/MBPriorQ reproduction and streamed-execution equivalence | PPL, NLL, and EBW |
+| [`table2/`](table2/README.md) | Tables 2 and 10 | 19-model PPL and side-metadata EBW |
+| [`table3/`](table3/README.md) | Table 3 | GSM8K, MMLU, and MMLU-Pro accuracy |
+| [`table4/`](table4/README.md) | Table 4 | Feature-selection PPL |
+| [`table5/`](table5/README.md) | Table 5 | Accuracy attribution PPL and EBW |
+| [`table6/`](table6/README.md) | Table 6 | Refined-granularity PPL and EBW |
+| [`table7/`](table7/README.md) | Table 7 | VMB-prior robustness statistics |
+| [`table8/`](table8/README.md) | Table 8 | KV-cache PPL and EBW |
 
-Every full paper workflow writes machine-readable JSON below ignored
-`local_runs/`. Quick scripts validate execution with reduced samples; their
-numbers are not paper evidence. No directory runs or validates another
-author's method.
+Run `run.sh` for the complete paper protocol. A `run_quick.sh` entry uses a
+reduced workload to check the execution path. All generated files are written
+below `local_runs/`.

@@ -14,4 +14,4 @@ This is the **only** model in the artifact that uses an imatrix. Public drivers
 require it for Qwen3-0.6B and reject it for every other model.
 
 The file contains per-input-channel calibration statistics, not model weights.
-The associated Qwen license is retained at `third_party/qwen3/LICENSE`.
+The associated Qwen license is retained as [`QWEN3_LICENSE`](QWEN3_LICENSE).

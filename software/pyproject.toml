@@ -13,7 +13,7 @@ dependencies = [
   "numpy",
   "safetensors",
   "torch",
-  "transformers>=4.51",
+  "transformers>=4.57,<5",
 ]
 
 [tool.setuptools.packages.find]

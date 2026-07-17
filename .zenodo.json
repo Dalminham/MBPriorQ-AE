@@ -1,7 +1,7 @@
 {
   "title": "MBPriorQ: Artifact for Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization",
   "upload_type": "software",
-  "description": "Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families. The archive contains a lightweight Qwen3-0.6B model reproduction, one complete 19-model Table 2 workflow, central ablations, low-memory execution, and open SpinalHDL/Verilator functional validation of the MBPriorQ hardware mechanisms. It excludes commercial EDA data and reproductions of comparison methods.",
+  "description": "Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization for Robust LLM Inference Across Model Families. The archive provides MBPriorQ quantization, a lightweight Qwen3-0.6B reproduction, the complete 19-model PPL workflow, paper ablations, low-memory execution, and SpinalHDL/Verilator functional validation of the accelerator dataflow.",
   "creators": [
     {
       "name": "Wei, Yijian",

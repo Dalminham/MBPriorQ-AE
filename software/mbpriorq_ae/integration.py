@@ -21,6 +21,10 @@ class ActivationQuantizationConfig:
     ablation_mode: str = "paper"
     random_seed: int = 20260606
     refined_block_size: int = 4
+    feature_mode: str | None = None
+    gradient_info: dict[str, torch.Tensor] | None = None
+    vmb_profile_enable: bool = False
+    metadata_target: str = "activation"
 
 
 def quantizer_arguments(
@@ -33,6 +37,10 @@ def quantizer_arguments(
     refined_block_size: int = 4,
     using_imatrix: bool = False,
     imatrix_file_name: str | None = None,
+    feature_mode: str | None = None,
+    gradient_info: dict[str, torch.Tensor] | None = None,
+    vmb_profile_enable: bool = False,
+    metadata_target: str = "activation",
 ) -> dict:
     """Build the exact argument surface used by the curated quantizers."""
     if method != "mbpriorq":
@@ -48,8 +56,10 @@ def quantizer_arguments(
         "refined_block_size": int(refined_block_size),
         "using_imatrix": bool(using_imatrix),
         "imatrix_file_name": imatrix_file_name,
-        "vmb_profile_enable": False,
-        "metadata_target": "activation",
+        "feature_mode": feature_mode,
+        "gradient_info": gradient_info,
+        "vmb_profile_enable": bool(vmb_profile_enable),
+        "metadata_target": metadata_target,
     }
 
 
@@ -89,6 +99,10 @@ class ActivationFakeQuantLinear(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
+            feature_mode=config.feature_mode,
+            gradient_info=config.gradient_info,
+            vmb_profile_enable=config.vmb_profile_enable,
+            metadata_target=config.metadata_target,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -128,6 +142,10 @@ class ActivationFakeQuantModule(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
+            feature_mode=config.feature_mode,
+            gradient_info=config.gradient_info,
+            vmb_profile_enable=config.vmb_profile_enable,
+            metadata_target=config.metadata_target,
         )
 
     def forward(self, x: torch.Tensor, *args, **kwargs):
@@ -159,6 +177,10 @@ class ActivationFakeQuantQwen3VLExperts(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
+            feature_mode=config.feature_mode,
+            gradient_info=config.gradient_info,
+            vmb_profile_enable=config.vmb_profile_enable,
+            metadata_target=config.metadata_target,
         )
         self.down_quantizer = make_quantizer(
             method=config.method,
@@ -167,6 +189,10 @@ class ActivationFakeQuantQwen3VLExperts(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
+            feature_mode=config.feature_mode,
+            gradient_info=config.gradient_info,
+            vmb_profile_enable=config.vmb_profile_enable,
+            metadata_target=config.metadata_target,
         )
 
     def forward(

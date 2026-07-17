@@ -1,0 +1,7 @@
+model_key,method,ppl,effective_ebw
+qwen3_0_6b,bf16,20.9748,
+qwen3_0_6b,nvfp4,21.7799,4.5000
+qwen3_0_6b,mbpriorq,21.6571,4.6833
+llama2_7b,bf16,5.4693,
+llama2_7b,nvfp4,5.7997,4.5000
+llama2_7b,mbpriorq,5.7802,4.6866

@@ -134,6 +134,38 @@ class QuantizationTests(unittest.TestCase):
         self.assertEqual(result.shape, decode_step.shape)
         self.assertTrue(torch.isfinite(result).all())
 
+    def test_feature_modes_preserve_standard_deviation_selection_count(self):
+        torch.manual_seed(1308)
+        data = torch.randn(8, 32)
+        name = "model.layers[0].mlp.up_proj"
+        gradient = {"model.layers.0.mlp.up_proj": torch.rand(32)}
+        reference = MBPriorQ_Quantizer(quantizer_args())
+        std = reference._feature_std_metric(data)
+        threshold, _, _ = reference._search_threshold_for_replacement(data, name)
+        expected_count = int((std > threshold).sum().item())
+
+        for feature in ("std", "diff", "grad", "diff_grad", "std_grad"):
+            with self.subTest(feature=feature):
+                quantizer = MBPriorQ_Quantizer(
+                    quantizer_args(
+                        feature_mode=feature,
+                        gradient_info=gradient if "grad" in feature else None,
+                    )
+                )
+                selected, _ = quantizer._select_feature_mask(data, name, data.dtype)
+                self.assertEqual(int(selected.sum().item()), expected_count)
+
+    def test_gradient_feature_requires_matching_calibration_entry(self):
+        quantizer = MBPriorQ_Quantizer(
+            quantizer_args(feature_mode="grad", gradient_info={"other": torch.ones(32)})
+        )
+        with self.assertRaisesRegex(KeyError, "Gradient calibration"):
+            quantizer.fake_quantize_activation(
+                torch.randn(4, 32),
+                name="model.layers[0].mlp.up_proj",
+                tensor_shape=(16, 32),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

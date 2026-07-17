@@ -2,9 +2,10 @@
 
 This repository is the public MICRO 2026 artifact, not a development mirror.
 
-- Include only files needed to evaluate claims listed in `docs/AE_SCOPE.md`.
+- Include only files needed to run the workflows documented by the public
+  README files.
 - Keep experiment names paper-oriented. Do not use reviewer identifiers.
-- Preserve source revision, file origin, modifications, and checksums.
+- Preserve source origin and licensing for every distributed file.
 - Do not include model weights, credentials, user-specific absolute paths,
   proprietary EDA libraries, or unlicensed third-party code.
 - Do not include reproductions, source code, or result-validation workflows for

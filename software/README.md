@@ -1,34 +1,36 @@
-# Software Artifact
+# MBPriorQ Software
 
-`software/mbpriorq_ae/` is the minimal executable MBPriorQ closure used by the
-public experiments. Install it from the repository root with:
+## Setup
 
 ```bash
+conda env create -f software/environment.yml
+conda activate mbpriorq-ae
 python -m pip install -e software
 ```
 
 ## Components
 
-| Module | Responsibility |
+| Path | Responsibility |
 |---|---|
-| `mbpriorq.py` | W4A4 fake quantization, VMB selection, online prior, and 16-to-{8,4,2} refinement. |
-| `integration.py` | Hugging Face Linear and Qwen3-VL stacked-expert activation wrappers. |
-| `checkpoint.py` | Bounded-memory generation of loadable fake-quantized checkpoints, including `lm_head`. |
-| `perplexity.py` | Paper-compatible contiguous-window PPL with a true full-GPU backend. |
-| `offload.py` | Correctness-oriented safetensors layer streaming for standard decoder models and Qwen3-VL's language path. |
-| `ebw.py` | Formal mask/scale/effective-bit-width accounting. |
+| `mbpriorq_ae/mbpriorq.py` | W4A4 quantization, VMB selection, online prior, and selective refinement |
+| `mbpriorq_ae/integration.py` | Hugging Face Linear and stacked-expert integration |
+| `mbpriorq_ae/checkpoint.py` | Bounded-memory fake-quantized checkpoint generation |
+| `mbpriorq_ae/perplexity.py` | Paper-compatible PPL and KV-cache evaluation |
+| `mbpriorq_ae/offload.py` | Layer-streamed execution for large checkpoints and Qwen3-VL's language path |
+| `mbpriorq_ae/kv_cache.py` | BF16, NVFP4, and MBPriorQ KV-cache paths |
+| `mbpriorq_ae/ebw.py` | Mask, scale, and effective-bit-width accounting |
+| `tools/` | Shared command-line drivers used by the paper experiments |
 
-The streamed backend is included so large paper models do not need to fit in
-VRAM. It keeps hidden states in CPU DRAM and loads one decoder layer from the
-checkpoint at a time. It raises on NaN/Inf and does not silently alter outputs.
-It is an AE execution mechanism, not a claim of serving-system performance.
+The streamed backend keeps hidden states in CPU memory and loads one decoder
+layer at a time, allowing model-family PPL evaluation when the complete
+checkpoint does not fit GPU memory.
 
-Run all dependency-light tests with:
+## Tests
 
 ```bash
-PYTHONPATH=software python -m pytest -q software/tests
+python -m pytest -q software/tests
 ```
 
-`scripts/compare_software_source.py` is a maintainer provenance check against
-the pinned private development revision. Evaluators do not need that source
-tree.
+The tests cover FP4 arithmetic, regular/refined scale selection, online-prior
+state, checkpoint integration, streamed loading, KV-cache quantization, true
+batch execution, final partial PPL chunks, and deterministic EBW accounting.

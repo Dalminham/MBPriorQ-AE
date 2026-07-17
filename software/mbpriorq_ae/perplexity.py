@@ -63,8 +63,10 @@ def paper_compatible_full_model_ppl(
     *,
     sequence_length: int = 2048,
     num_samples: int = 0,
+    batch_size: int = 1,
     device: str = "cuda",
     progress: bool = True,
+    cache_factory=None,
 ) -> tuple[float, int, float]:
     """Evaluate contiguous WikiText2 windows with the whole model resident."""
     if input_ids.ndim != 2 or input_ids.shape[0] != 1:
@@ -75,34 +77,105 @@ def paper_compatible_full_model_ppl(
         raise ValueError(
             f"Dataset has {input_ids.shape[1]} tokens, fewer than one {sequence_length}-token window"
         )
+    if batch_size <= 0:
+        raise ValueError(f"batch_size must be positive, got {batch_size}")
 
     dev = torch.device(device)
     model = model.to(dev)
     model.eval()
     original_use_cache = getattr(model.config, "use_cache", None)
+    use_cache = cache_factory is not None
     if original_use_cache is not None:
-        model.config.use_cache = False
+        model.config.use_cache = use_cache
     loss_function = nn.CrossEntropyLoss()
     nll = torch.zeros((), dtype=torch.float32, device=dev)
-    for window in range(windows):
-        start = window * sequence_length
-        batch = input_ids[:, start : start + sequence_length].to(dev)
-        logits = model(batch, use_cache=False).logits
+    completed_windows = 0
+    for first_window in range(0, windows, batch_size):
+        current_batch_size = min(batch_size, windows - first_window)
+        batches = []
+        for offset in range(current_batch_size):
+            start = (first_window + offset) * sequence_length
+            batches.append(input_ids[:, start : start + sequence_length])
+        batch = torch.cat(batches, dim=0).to(dev)
+        model_kwargs = {"use_cache": use_cache}
+        if cache_factory is not None:
+            model_kwargs["past_key_values"] = cache_factory()
+        logits = model(batch, **model_kwargs).logits
         if not torch.isfinite(logits).all():
-            raise FloatingPointError(f"Non-finite logits in PPL window {window}")
+            raise FloatingPointError(
+                f"Non-finite logits in PPL batch starting at window {first_window}"
+            )
         shifted_logits = logits[:, :-1, :].contiguous()
         shifted_labels = batch[:, 1:]
         loss = loss_function(
             shifted_logits.view(-1, shifted_logits.shape[-1]),
             shifted_labels.reshape(-1),
         )
-        nll += loss.float() * (sequence_length - 1)
+        nll += loss.float() * (current_batch_size * (sequence_length - 1))
+        completed_windows += current_batch_size
         if progress:
-            print(f"[ppl] window {window + 1}/{windows}", flush=True)
+            print(f"[ppl] window {completed_windows}/{windows}", flush=True)
     if original_use_cache is not None:
         model.config.use_cache = original_use_cache
     total_nll = float(nll.item())
     return math.exp(total_nll / float(windows * sequence_length)), windows, total_nll
+
+
+@torch.no_grad()
+def paper_compatible_kv_cache_ppl(
+    model,
+    input_ids: torch.Tensor,
+    *,
+    sequence_length: int = 2048,
+    num_samples: int = 0,
+    device: str = "cuda",
+    progress: bool = True,
+    cache_factory=None,
+) -> tuple[float, int, float]:
+    """Evaluate the full text stream with the Table 8 KV-cache protocol."""
+    if input_ids.ndim != 2 or input_ids.shape[0] != 1:
+        raise ValueError(f"Expected token ids with shape [1, tokens], got {tuple(input_ids.shape)}")
+
+    starts = list(range(0, input_ids.shape[1], sequence_length))
+    if num_samples > 0:
+        starts = starts[: int(num_samples)]
+    if not starts:
+        raise ValueError("The dataset contains no tokens")
+
+    dev = torch.device(device)
+    model = model.to(dev)
+    model.eval()
+    loss_function = nn.CrossEntropyLoss()
+    nll = torch.zeros((), dtype=torch.float32, device=dev)
+    loss_tokens = 0
+    chunks = 0
+    for start in starts:
+        batch = input_ids[:, start : start + sequence_length].to(dev)
+        if batch.shape[1] < 2:
+            continue
+        model_kwargs = {}
+        if cache_factory is not None:
+            model_kwargs["past_key_values"] = cache_factory()
+            model_kwargs["use_cache"] = True
+        logits = model(batch, **model_kwargs).logits
+        if not torch.isfinite(logits).all():
+            raise FloatingPointError(f"Non-finite logits in KV-cache chunk {chunks}")
+        shifted_logits = logits[:, :-1, :].contiguous()
+        shifted_labels = batch[:, 1:]
+        current_tokens = int(shifted_labels.numel())
+        loss = loss_function(
+            shifted_logits.view(-1, shifted_logits.shape[-1]),
+            shifted_labels.reshape(-1),
+        )
+        nll += loss.float() * current_tokens
+        loss_tokens += current_tokens
+        chunks += 1
+        if progress:
+            print(f"[ppl] KV-cache chunk {chunks}/{len(starts)}", flush=True)
+    if loss_tokens == 0:
+        raise ValueError("The selected KV-cache PPL chunks contain no next-token targets")
+    total_nll = float(nll.item())
+    return math.exp(total_nll / float(loss_tokens)), chunks, total_nll
 
 
 @torch.no_grad()

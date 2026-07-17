@@ -27,22 +27,7 @@ outputs/
 *.pt
 *.pth
 
-# EDA products and proprietary libraries
-*.db
-*.alib
-*.svf
-*.ddc
-mapped/
-
 # Editors and operating system
 .idea/
 .vscode/
 .DS_Store
-
-# Standalone appendix build products
-artifact_appendix/ae.aux
-artifact_appendix/ae.fdb_latexmk
-artifact_appendix/ae.fls
-artifact_appendix/ae.log
-artifact_appendix/ae.out
-artifact_appendix/ae.pdf
