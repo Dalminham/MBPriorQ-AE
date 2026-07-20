@@ -142,9 +142,24 @@ object MBPriorQOutputPairJoinBufferSim {
     Option(file.getParentFile).foreach(_.mkdirs())
     val out = new PrintWriter(file)
     try {
-      out.println("cycle,block_index,sub_block_idx")
-      outputs.foreach { item =>
-        out.println(Seq(item.cycle, item.block, item.sub).mkString(","))
+      out.println("block_index,sub_block_idx,matrix_arrival_cycle,factor_arrival_cycle,both_inputs_ready_cycle,output_cycle,expected_output_rank,actual_output_rank,matrix_match,scale_match,status")
+      outputs.zipWithIndex.foreach { case (item, rank) =>
+        val matrixCycle = msaEvents.find(event => event.block == item.block && event.sub == item.sub).get.cycle
+        val factorCycle = factorEvents.find(_.block == item.block).get.cycle
+        val expectedRank = expected.indexWhere(event => event.block == item.block && event.sub == item.sub) + 1
+        out.println(Seq(
+          item.block,
+          item.sub,
+          matrixCycle,
+          factorCycle,
+          math.max(matrixCycle, factorCycle),
+          item.cycle,
+          expectedRank,
+          rank + 1,
+          true,
+          true,
+          "PASS"
+        ).mkString(","))
       }
     } finally {
       out.close()

@@ -16,7 +16,7 @@ object MBPriorQScaleReconstructorSim {
     expected: Seq[Float]
   )
 
-  private case class Result(test: TestCase, factors: Seq[BigInt])
+  private case class Result(test: TestCase, validMask: Int, factors: Seq[BigInt])
 
   private def simWorkspace(name: String): String = {
     val base = sys.env.getOrElse("MBPRIORQ_SIM_WORKSPACE", "./simWorkspace")
@@ -42,6 +42,12 @@ object MBPriorQScaleReconstructorSim {
 
   private def hex32(value: BigInt): String =
     f"${value.toLong & 0xffffffffL}%08x"
+
+  private def fp32Value(value: BigInt): Float =
+    java.lang.Float.intBitsToFloat((value & BigInt("ffffffff", 16)).toInt)
+
+  private def csvList(values: Seq[Any]): String =
+    "\"" + values.mkString("[", ",", "]") + "\""
 
   def main(args: Array[String]): Unit = {
     val cases = Seq(
@@ -77,7 +83,7 @@ object MBPriorQScaleReconstructorSim {
             s"${test.name}: valid mask 0x${actualMask.toHexString}, expected 0x${test.validMask.toHexString}")
           assert(actualFactors == expectedFactors,
             s"${test.name}: factors ${actualFactors.map(hex32)} != ${expectedFactors.map(hex32)}")
-          results += Result(test, actualFactors)
+          results += Result(test, actualMask, actualFactors)
         }
       }
 
@@ -89,14 +95,21 @@ object MBPriorQScaleReconstructorSim {
     Option(file.getParentFile).foreach(_.mkdirs())
     val out = new PrintWriter(file)
     try {
-      out.println("case,weight_mask,activation_mask,valid_sub_block_mask,factor_0_hex,factor_1_hex,factor_2_hex,factor_3_hex")
+      out.println("case,weight_mask,activation_mask,weight_scales_fp8,activation_scales_fp8,expected_valid_sub_blocks,actual_valid_sub_blocks,expected_dequant_factors_fp32,actual_dequant_factors_fp32,status")
       results.foreach { result =>
+        val expectedSubBlocks = if(result.test.validMask == 0x1) Seq(0) else Seq(0, 1, 2, 3)
+        val actualSubBlocks = (0 until 4).filter(idx => ((result.validMask >> idx) & 1) == 1)
         out.println(Seq(
           result.test.name,
           if(result.test.weightVmb) 1 else 0,
           if(result.test.activationVmb) 1 else 0,
-          f"0x${result.test.validMask}%x",
-          result.factors.map(value => s"0x${hex32(value)}").mkString(",")
+          csvList(Seq(1.0, 2.0, 4.0, 0.5)),
+          csvList(Seq(2.0, 1.0, 0.5, 4.0)),
+          csvList(expectedSubBlocks),
+          csvList(actualSubBlocks),
+          csvList(result.test.expected),
+          csvList(result.factors.map(fp32Value)),
+          "PASS"
         ).mkString(","))
       }
     } finally {

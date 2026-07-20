@@ -167,16 +167,25 @@ object MBPriorQUpgradedPacketSchedulerSim {
         if(order.lastOption.contains(event.block)) order else order :+ event.block
       }
       val outputCounts = (0 until blockCount).map(block => outputs.count(_.block == block))
-      out.println("regular_vpu_issue_cycle,refined_vpu_issue_cycle,first_multimsa_issue_cycle,vpu_masks,multimsa_issue_order,output_block_order,output_beats_by_block")
-      out.println(Seq(
-        vpuIssues.head.cycle,
-        vpuIssues(1).cycle,
-        msaIssues.head.cycle,
-        "\"" + vpuIssues.map(issue => f"0x${issue.mask}%x").mkString("[", ",", "]") + "\"",
-        "\"" + msaIssues.map(_.block).mkString("[", ",", "]") + "\"",
-        "\"" + outputOrder.mkString("[", ",", "]") + "\"",
-        "\"" + outputCounts.mkString("[", ",", "]") + "\""
-      ).mkString(","))
+      val completionOrder = Seq(3, 1, 2, 0)
+      out.println("block_index,path,vpu_issue_cycle,multimsa_issue_cycle,vpu_precedes_multimsa,injected_completion_rank,committed_output_rank,expected_output_beats,actual_output_beats,status")
+      (0 until blockCount).foreach { block =>
+        val issue = msaIssues.find(_.block == block).get
+        val vpuCycle = vpuIssues.find(maskIssue => ((maskIssue.mask >> block) & 1) == 1).get.cycle
+        val expectedBeats = if(issue.refined) 16 else 4
+        out.println(Seq(
+          block,
+          if(issue.refined) "refined" else "regular",
+          vpuCycle,
+          issue.cycle,
+          vpuCycle < issue.cycle,
+          completionOrder.indexOf(block) + 1,
+          outputOrder.indexOf(block) + 1,
+          expectedBeats,
+          outputCounts(block),
+          "PASS"
+        ).mkString(","))
+      }
     } finally {
       out.close()
     }

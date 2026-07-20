@@ -1,5 +1,5 @@
-case,weight_mask,activation_mask,valid_sub_block_mask,factor_0_hex,factor_1_hex,factor_2_hex,factor_3_hex
-regular,0,0,0x1,0x40000000,0x40000000,0x40000000,0x40000000
-weight_refined,1,0,0xf,0x40000000,0x40800000,0x41000000,0x3f800000
-activation_refined,0,1,0xf,0x40000000,0x3f800000,0x3f000000,0x40800000
-both_refined,1,1,0xf,0x40000000,0x40000000,0x40000000,0x40000000
+case,weight_mask,activation_mask,weight_scales_fp8,activation_scales_fp8,expected_valid_sub_blocks,actual_valid_sub_blocks,expected_dequant_factors_fp32,actual_dequant_factors_fp32,status
+regular,0,0,"[1.0,2.0,4.0,0.5]","[2.0,1.0,0.5,4.0]","[0]","[0]","[2.0,2.0,2.0,2.0]","[2.0,2.0,2.0,2.0]",PASS
+weight_refined,1,0,"[1.0,2.0,4.0,0.5]","[2.0,1.0,0.5,4.0]","[0,1,2,3]","[0,1,2,3]","[2.0,4.0,8.0,1.0]","[2.0,4.0,8.0,1.0]",PASS
+activation_refined,0,1,"[1.0,2.0,4.0,0.5]","[2.0,1.0,0.5,4.0]","[0,1,2,3]","[0,1,2,3]","[2.0,1.0,0.5,4.0]","[2.0,1.0,0.5,4.0]",PASS
+both_refined,1,1,"[1.0,2.0,4.0,0.5]","[2.0,1.0,0.5,4.0]","[0,1,2,3]","[0,1,2,3]","[2.0,2.0,2.0,2.0]","[2.0,2.0,2.0,2.0]",PASS

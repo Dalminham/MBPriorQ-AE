@@ -1,2 +1,5 @@
-regular_vpu_issue_cycle,refined_vpu_issue_cycle,first_multimsa_issue_cycle,vpu_masks,multimsa_issue_order,output_block_order,output_beats_by_block
-6,8,14,"[0x5,0xa]","[0,1,2,3]","[0,1,2,3]","[4,16,4,16]"
+block_index,path,vpu_issue_cycle,multimsa_issue_cycle,vpu_precedes_multimsa,injected_completion_rank,committed_output_rank,expected_output_beats,actual_output_beats,status
+0,regular,6,14,true,4,1,4,4,PASS
+1,refined,8,15,true,2,2,16,16,PASS
+2,regular,6,16,true,3,3,4,4,PASS
+3,refined,8,17,true,1,4,16,16,PASS

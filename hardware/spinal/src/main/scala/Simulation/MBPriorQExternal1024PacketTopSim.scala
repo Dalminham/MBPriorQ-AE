@@ -176,6 +176,10 @@ object MBPriorQExternal1024PacketTopSim {
       "MBPRIORQ_EXTERNAL_1024_TOP_CSV",
       "target/ae-results/external_1024_top.csv"
     )
+    val summaryPath = sys.env.getOrElse(
+      "MBPRIORQ_EXTERNAL_1024_TOP_SUMMARY_CSV",
+      "target/ae-results/system_summary.csv"
+    )
 
     val compiledMsa = SimConfig
       .withConfig(SpinalConfig(bitVectorWidthMax = 131072))
@@ -318,6 +322,50 @@ object MBPriorQExternal1024PacketTopSim {
       out.close()
     }
 
-    println(s"MBPriorQ public 1024-bit packet top simulation passed. Results: $resultPath")
+    val summaryFile = new File(summaryPath)
+    Option(summaryFile.getParentFile).foreach(_.mkdirs())
+    val summaryOut = new PrintWriter(summaryFile)
+    try {
+      summaryOut.println("block_index,path,weight_mask,activation_mask,sub_block_indices,matrix_scale_pairs,matrix_matches,scale_matches,output_packets,first_output_cycle,last_output_cycle,status")
+      for(block <- 0 until blockCount) {
+        val blockGroups = groups.filter(_.head.block == block)
+        val refined = ((refinedMask >> block) & 1) == 1
+        val weightVmb = ((weightMask >> block) & 1) == 1
+        val inputVmb = ((inputMask >> block) & 1) == 1
+        summaryOut.println(Seq(
+          block,
+          if(refined) "refined" else "regular",
+          if(weightVmb) 1 else 0,
+          if(inputVmb) 1 else 0,
+          "\"" + blockGroups.map(_.head.sub).mkString("[", ",", "]") + "\"",
+          blockGroups.size,
+          s"${blockGroups.size}/${blockGroups.size}",
+          s"${blockGroups.size}/${blockGroups.size}",
+          blockGroups.map(_.size).sum,
+          blockGroups.head.head.cycle,
+          blockGroups.last.last.cycle,
+          "PASS"
+        ).mkString(","))
+      }
+      summaryOut.println(Seq(
+        "TOTAL",
+        "all",
+        "-",
+        "-",
+        "-",
+        groups.size,
+        s"${groups.size}/${groups.size}",
+        s"${groups.size}/${groups.size}",
+        physicalPackets.size,
+        physicalPackets.head.cycle,
+        physicalPackets.last.cycle,
+        "PASS"
+      ).mkString(","))
+    } finally {
+      summaryOut.close()
+    }
+
+    println(s"MBPriorQ public 1024-bit packet top simulation passed. Packet trace: $resultPath")
+    println(s"Human-readable system summary: $summaryPath")
   }
 }

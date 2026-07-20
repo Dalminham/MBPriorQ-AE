@@ -1,3 +1,3 @@
-case,path,physical_lanes,first_partial_cycle,done_cycle,partial_count,sub_block_indices
-regular,regular,4,19,20,1,"[0]"
-refined,refined,4,7,11,4,"[0,1,2,3]"
+case,path,fp4_values_per_micro_block,physical_msa_lanes,expected_sub_block_indices,actual_sub_block_indices,expected_partial_count,actual_partial_count,first_partial_cycle,done_cycle,status
+regular,regular,16,4,"[0]","[0]",1,1,19,20,PASS
+refined,refined,16,4,"[0,1,2,3]","[0,1,2,3]",4,4,7,11,PASS

@@ -16,6 +16,7 @@ mkdir -p "${OUT}/system" "${OUT}/simWorkspace"
 
 export MBPRIORQ_SIM_WORKSPACE="${OUT}/simWorkspace"
 export MBPRIORQ_EXTERNAL_1024_TOP_CSV="${OUT}/system/external_1024_top.csv"
+export MBPRIORQ_EXTERNAL_1024_TOP_SUMMARY_CSV="${OUT}/system/system_summary.csv"
 
 cd "${ROOT}/hardware/spinal"
 "${SBT}" "runMain Simulation.MBPriorQExternal1024PacketTopSim"

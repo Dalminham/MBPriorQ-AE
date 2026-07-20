@@ -1,7 +1,7 @@
-cycle,block_index,sub_block_idx
-7,0,0
-9,1,0
-10,1,1
-11,1,2
-12,1,3
-14,2,0
+block_index,sub_block_idx,matrix_arrival_cycle,factor_arrival_cycle,both_inputs_ready_cycle,output_cycle,expected_output_rank,actual_output_rank,matrix_match,scale_match,status
+0,0,5,6,6,7,1,1,true,true,PASS
+1,0,2,0,2,9,2,2,true,true,PASS
+1,1,4,0,4,10,3,3,true,true,PASS
+1,2,1,0,1,11,4,4,true,true,PASS
+1,3,3,0,3,12,5,5,true,true,PASS
+2,0,8,7,8,14,6,6,true,true,PASS

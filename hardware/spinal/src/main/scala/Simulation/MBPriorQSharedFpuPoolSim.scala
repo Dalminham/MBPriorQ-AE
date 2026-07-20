@@ -85,15 +85,17 @@ object MBPriorQSharedFpuPoolSim {
     Option(file.getParentFile).foreach(_.mkdirs())
     val out = new PrintWriter(file)
     try {
-      out.println("cycle,block_index,path,max_busy_fpus,accepted_blocks,completed_blocks")
+      out.println("block_index,path,completion_cycle,pool_size,max_busy_fpus,total_accepted_blocks,total_completed_blocks,status")
       events.foreach { event =>
         out.println(Seq(
-          event.cycle,
           event.block,
           if(event.refined) "refined" else "regular",
+          event.cycle,
+          fpuCount,
           observedMaxBusy,
           acceptedAtEnd,
-          completedAtEnd
+          completedAtEnd,
+          "PASS"
         ).mkString(","))
       }
     } finally {

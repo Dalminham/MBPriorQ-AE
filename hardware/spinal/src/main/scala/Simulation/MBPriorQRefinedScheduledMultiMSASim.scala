@@ -113,16 +113,21 @@ object MBPriorQRefinedScheduledMultiMSASim {
     Option(file.getParentFile).foreach(_.mkdirs())
     val out = new PrintWriter(file)
     try {
-      out.println("case,path,physical_lanes,first_partial_cycle,done_cycle,partial_count,sub_block_indices")
+      out.println("case,path,fp4_values_per_micro_block,physical_msa_lanes,expected_sub_block_indices,actual_sub_block_indices,expected_partial_count,actual_partial_count,first_partial_cycle,done_cycle,status")
       Seq(regular, refined).foreach { result =>
+        val expectedSubs = if(result.refined) Seq(0, 1, 2, 3) else Seq(0)
         out.println(Seq(
           result.name,
           if(result.refined) "refined" else "regular",
+          16,
           physicalLanes,
+          "\"" + expectedSubs.mkString("[", ",", "]") + "\"",
+          "\"" + result.subBlocks.mkString("[", ",", "]") + "\"",
+          expectedSubs.size,
+          result.subBlocks.size,
           result.firstPartialCycle,
           result.doneCycle,
-          result.subBlocks.size,
-          "\"" + result.subBlocks.mkString("[", ",", "]") + "\""
+          "PASS"
         ).mkString(","))
       }
     } finally {
