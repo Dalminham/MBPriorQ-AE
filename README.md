@@ -89,6 +89,11 @@ Only Qwen3-0.6B weight quantization consumes the bundled imatrix. All model
 checkpoints and datasets are supplied locally through the paths documented by
 each experiment.
 
+For models that do not fit entirely in GPU memory, the streamed backend keeps
+the hidden states in CPU memory and transfers one decoder layer to the GPU at a
+time. This reduces peak GPU-memory requirements and enables the large-model PPL
+workflows on memory-constrained GPUs.
+
 ## Citation
 
 Citation metadata is provided in [`CITATION.cff`](CITATION.cff). The artifact is

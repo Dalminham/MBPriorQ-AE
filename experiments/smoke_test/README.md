@@ -23,6 +23,11 @@ automatically uses the bundled imatrix.
 
 ## Streamed-Execution Equivalence
 
+Qwen3-0.6B fits in GPU memory and therefore provides a controlled validation
+target for the low-memory backend. This experiment verifies that layer-streamed
+execution, which supports larger-model evaluation under limited GPU memory,
+preserves the PPL and total NLL of full-GPU execution.
+
 The following workflow compares full-GPU and one-layer-at-a-time execution on
 the same BF16 and MBPriorQ checkpoints. It validates total NLL with a relative
 tolerance of `2e-4`.
