@@ -9,7 +9,7 @@ dependencies:
   - make
   - gcc_linux-64
   - gxx_linux-64
-  - verilator>=4.034
+  - verilator=4.228
   - pip:
       - datasets==4.7.0
       - accelerate==1.13.0

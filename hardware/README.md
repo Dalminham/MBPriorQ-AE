@@ -13,7 +13,7 @@ conda activate mbpriorq-ae
 ```
 
 The validated toolchain uses Java 17, sbt 1.10.2, SpinalHDL 1.8, Verilator
-4.034 or newer, GNU Make, and a C++ compiler.
+4.228, GNU Make, and a C++ compiler.
 
 ## Run
 
