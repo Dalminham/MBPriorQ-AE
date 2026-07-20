@@ -16,12 +16,11 @@ This repository contains the software and hardware artifact for:
 - [`data/imatrix/`](data/imatrix/README.md): the Qwen3-0.6B importance matrix used
   for weight quantization.
 
-## Software Setup
+## Setup
 
 ```bash
-conda env create -f software/environment.yml
+conda env create -f environment.yml
 conda activate mbpriorq-ae
-python -m pip install -e software
 python -m pytest -q software/tests
 ```
 
@@ -71,8 +70,7 @@ useful, the paper reference values, required inputs, and generated outputs.
 ## Hardware Verification
 
 ```bash
-conda env create -f hardware/environment.yml
-conda activate mbpriorq-ae-hw
+conda activate mbpriorq-ae
 ./hardware/run_all.sh
 ```
 

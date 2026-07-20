@@ -1,9 +1,0 @@
-name: mbpriorq-ae-hw
-channels:
-  - conda-forge
-dependencies:
-  - openjdk=17
-  - make
-  - gcc_linux-64
-  - gxx_linux-64
-  - verilator>=4.034

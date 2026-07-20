@@ -41,7 +41,7 @@ try:
 except (ImportError, ModuleNotFoundError) as exc:
     raise SystemExit(
         "Validation dependencies are unavailable. Activate the mbpriorq-ae "
-        "environment created from software/environment.yml.\n"
+        "environment created from environment.yml.\n"
         f"Original import error: {exc}"
     )
 PY

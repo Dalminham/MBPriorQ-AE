@@ -5,9 +5,11 @@ MBPriorQ accelerator dataflow.
 
 ## Setup
 
+From the repository root:
+
 ```bash
-conda env create -f hardware/environment.yml
-conda activate mbpriorq-ae-hw
+conda env create -f environment.yml
+conda activate mbpriorq-ae
 ```
 
 The validated toolchain uses Java 17, sbt 1.10.2, SpinalHDL 1.8, Verilator

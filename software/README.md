@@ -2,10 +2,11 @@
 
 ## Setup
 
+From the repository root:
+
 ```bash
-conda env create -f software/environment.yml
+conda env create -f environment.yml
 conda activate mbpriorq-ae
-python -m pip install -e software
 ```
 
 ## Components
