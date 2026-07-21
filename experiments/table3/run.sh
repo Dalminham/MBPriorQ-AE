@@ -51,7 +51,11 @@ for model_key in ${MODEL_KEYS}; do
   fi
   for method in bf16 mbpriorq; do
     model="${source_model}"
-    [[ "${method}" == "mbpriorq" ]] && model="${mbp_model}"
+    model_type="cloud"
+    if [[ "${method}" == "mbpriorq" ]]; then
+      model="${mbp_model}"
+      model_type="edge"
+    fi
     for benchmark in ${BENCHMARKS}; do
       case "${benchmark}" in
         gsm8k) dataset="${GSM8K_DATASET_PATH}" ;;
@@ -62,7 +66,7 @@ for model_key in ${MODEL_KEYS}; do
       [[ "${RESUME}" == "1" ]] && resume_args+=(--resume)
       "${PYTHON}" "${ROOT}/software/tools/run_downstream_benchmark.py" \
         --model "${model}" --tokenizer "${source_model}" --method "${method}" \
-        --model-type cloud --benchmark "${benchmark}" --dataset "${dataset}" \
+        --model-type "${model_type}" --benchmark "${benchmark}" --dataset "${dataset}" \
         --load-backend "${load_backend}" --num-examples "${NUM_EXAMPLES}" \
         --max-new-tokens "${MAX_NEW_TOKENS}" "${resume_args[@]}" \
         --output "${OUTPUT_ROOT}/${model_key}__${method}__${benchmark}.json"
