@@ -44,6 +44,13 @@ def parse_args():
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument(
+        "--layer-smoke",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Skip completed PPL models and validate MBPriorQ on the first N streamed layers of each remaining model",
+    )
     parser.add_argument("--only", action="append", default=[])
     return parser.parse_args()
 
@@ -145,6 +152,157 @@ def _valid_result(path: Path, *, require_metadata: bool = False) -> bool:
     return valid
 
 
+def _valid_layer_smoke(path: Path, expected_layers: int) -> bool:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return (
+        payload.get("mode") == "mbpriorq_streamed_layer_smoke"
+        and payload.get("status") == "PASS"
+        and payload.get("requested_layers") == expected_layers
+        and payload.get("completed_layers") == expected_layers
+        and isinstance(payload.get("quantized_weight_count"), int)
+        and payload["quantized_weight_count"] > 0
+        and isinstance(payload.get("wrapped_linear_count"), int)
+        and payload["wrapped_linear_count"] > 0
+        and len(payload.get("layers", [])) == expected_layers
+        and all(layer.get("output_finite") is True for layer in payload["layers"])
+    )
+
+
+def _write_layer_smoke_observation(
+    path: Path, models: list[dict], states: dict[str, str]
+) -> None:
+    lines = [
+        "# Table 2 remaining-model layer smoke",
+        "",
+        f"Updated: {datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "| Model | Validation |",
+        "|---|---|",
+    ]
+    for model in models:
+        lines.append(f"| {model['label']} | {states.get(model['key'], 'pending')} |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _run_layer_smoke(args, models: list[dict], paths: dict[str, Path]) -> None:
+    if args.layer_smoke <= 0:
+        raise ValueError("--layer-smoke must be positive")
+    output_root = Path(args.output_root) / "layer_smoke"
+    result_root = output_root / "results"
+    log_root = output_root / "logs"
+    result_root.mkdir(parents=True, exist_ok=True)
+    log_root.mkdir(parents=True, exist_ok=True)
+    observation = output_root / "observation.md"
+    states: dict[str, str] = {}
+    rows: list[dict] = []
+    failures: list[str] = []
+    runner = ROOT / "software/tools/run_streamed_layer_smoke.py"
+
+    for model in models:
+        full_result = Path(args.output_root) / "results" / f"{model['key']}__mbpriorq.json"
+        if _valid_result(full_result, require_metadata=True):
+            states[model["key"]] = "full MBPriorQ PPL already complete"
+            rows.append({"model_key": model["key"], "model": model["label"], "status": "full_ppl_complete"})
+            _write_layer_smoke_observation(observation, models, states)
+            continue
+
+        output = result_root / f"{model['key']}__first_{args.layer_smoke}_layers.json"
+        if args.resume and _valid_layer_smoke(output, args.layer_smoke):
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            states[model["key"]] = f"PASS ({args.layer_smoke}/{args.layer_smoke} layers, resumed)"
+            rows.append({
+                "model_key": model["key"],
+                "model": model["label"],
+                "status": "PASS",
+                "completed_layers": payload["completed_layers"],
+                "total_layers": payload["total_layers"],
+                "quantized_weight_count": payload["quantized_weight_count"],
+                "wrapped_linear_count": payload["wrapped_linear_count"],
+                "elapsed_seconds": payload["elapsed_seconds"],
+            })
+            _write_layer_smoke_observation(observation, models, states)
+            continue
+
+        states[model["key"]] = "running"
+        _write_layer_smoke_observation(observation, models, states)
+        command = [
+            sys.executable,
+            str(runner),
+            "--model",
+            str(paths[model["key"]]),
+            "--tokenizer",
+            str(paths[model["key"]]),
+            "--model-key",
+            model["key"],
+            "--dataset",
+            args.dataset,
+            "--sequence-length",
+            str(args.sequence_length),
+            "--layers",
+            str(args.layer_smoke),
+            "--model-family",
+            model.get("model_family", "auto"),
+            "--model-type",
+            model["model_type"],
+            "--device",
+            args.device,
+            "--output",
+            str(output),
+        ]
+        if model.get("requires_imatrix"):
+            command.extend(("--imatrix", args.imatrix))
+        log_path = log_root / f"{model['key']}__first_{args.layer_smoke}_layers.log"
+        with log_path.open("w", encoding="utf-8") as log:
+            completed = subprocess.run(
+                command,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+        if completed.returncode != 0 or not _valid_layer_smoke(output, args.layer_smoke):
+            states[model["key"]] = f"failed (see {log_path.name})"
+            rows.append({"model_key": model["key"], "model": model["label"], "status": "FAIL"})
+            failures.append(f"{model['key']}: see {log_path}")
+            _write_layer_smoke_observation(observation, models, states)
+            continue
+        payload = json.loads(output.read_text(encoding="utf-8"))
+        states[model["key"]] = f"PASS ({args.layer_smoke}/{args.layer_smoke} layers)"
+        rows.append({
+            "model_key": model["key"],
+            "model": model["label"],
+            "status": "PASS",
+            "completed_layers": payload["completed_layers"],
+            "total_layers": payload["total_layers"],
+            "quantized_weight_count": payload["quantized_weight_count"],
+            "wrapped_linear_count": payload["wrapped_linear_count"],
+            "elapsed_seconds": payload["elapsed_seconds"],
+        })
+        _write_layer_smoke_observation(observation, models, states)
+
+    summary = output_root / "summary.csv"
+    fieldnames = (
+        "model_key",
+        "model",
+        "status",
+        "completed_layers",
+        "total_layers",
+        "quantized_weight_count",
+        "wrapped_linear_count",
+        "elapsed_seconds",
+    )
+    with summary.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"Layer-smoke summary: {summary}")
+    if failures:
+        raise SystemExit("Layer smoke failed:\n- " + "\n- ".join(failures))
+
+
 def _write_side_metadata(
     path: Path,
     models: list[dict],
@@ -227,16 +385,20 @@ def main():
     log_root = output_root / "logs"
     result_root.mkdir(parents=True, exist_ok=True)
     log_root.mkdir(parents=True, exist_ok=True)
-    observation = output_root / "observation.md"
-    metadata_output = output_root / "side_metadata_overhead.csv"
-    states: dict[str, str] = {}
-    _write_observation(observation, models, states)
 
     print(f"Preflight passed for {len(models)} models")
     for model in models:
         print(f"  {model['key']}: {paths[model['key']]}")
     if args.preflight_only:
         return
+    if args.layer_smoke:
+        _run_layer_smoke(args, models, paths)
+        return
+
+    observation = output_root / "observation.md"
+    metadata_output = output_root / "side_metadata_overhead.csv"
+    states: dict[str, str] = {}
+    _write_observation(observation, models, states)
 
     runner = ROOT / "software/tools/run_wikitext_ppl.py"
     mismatches: list[str] = []

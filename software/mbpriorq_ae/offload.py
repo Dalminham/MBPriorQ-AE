@@ -11,6 +11,7 @@ import gc
 import inspect
 import json
 import math
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,6 +53,17 @@ class StreamedPPLResult:
     wrapped_linear_count: int
     quantized_weight_count: int
     model_family: str
+
+
+@dataclass(frozen=True)
+class StreamedLayerSmokeResult:
+    requested_layers: int
+    completed_layers: int
+    total_layers: int
+    wrapped_linear_count: int
+    quantized_weight_count: int
+    model_family: str
+    layers: tuple[dict, ...]
 
 
 class _CaptureInterrupt(Exception):
@@ -410,6 +422,115 @@ def _layer_kwargs(layer: nn.Module, captured: dict, device: torch.device) -> dic
         for key, value in captured.items()
         if key in accepted
     }
+
+
+@torch.no_grad()
+def streamed_layer_smoke(
+    *,
+    checkpoint: str | Path,
+    input_ids: torch.Tensor,
+    sequence_length: int,
+    max_layers: int,
+    device: str,
+    dtype: torch.dtype,
+    model_family: str = "auto",
+    weight_quantizer,
+    activation_config: ActivationQuantizationConfig,
+    progress: bool = True,
+) -> StreamedLayerSmokeResult:
+    """Quantize and execute the first N streamed layers without reporting PPL."""
+    try:
+        from transformers import AutoConfig
+    except ImportError as error:
+        raise RuntimeError("Streamed layer smoke requires transformers") from error
+
+    if max_layers <= 0:
+        raise ValueError("max_layers must be positive")
+    checkpoint = Path(checkpoint)
+    index = load_safetensors_index(checkpoint)
+    weight_map = index["weight_map"]
+    config = AutoConfig.from_pretrained(checkpoint, trust_remote_code=True)
+    plan = build_execution_plan(config, dtype, model_family)
+    validate_stream_structure(plan, weight_map)
+    total_layers = len(plan.base_model.layers)
+    if total_layers < max_layers:
+        raise ValueError(
+            f"Requested {max_layers} smoke layers, but the model has {total_layers}"
+        )
+    if input_ids.shape[1] < sequence_length:
+        raise ValueError("No complete input window is available for layer smoke")
+
+    dev = torch.device(device)
+    _materialize_rotary(plan.base_model, plan.config, dev)
+    hidden, captured = _capture_hidden_states(
+        plan,
+        checkpoint,
+        weight_map,
+        input_ids,
+        windows=1,
+        sequence_length=sequence_length,
+        dtype=dtype,
+        device=dev,
+    )
+    outputs = torch.empty_like(hidden)
+    wrapped_count = 0
+    quantized_count = 0
+    layer_results: list[dict] = []
+
+    for layer_index in range(max_layers):
+        layer_started = time.perf_counter()
+        layer = plan.base_model.layers[layer_index]
+        prefix = plan.layer_prefix_template.format(layer=layer_index)
+        state = load_state_for_prefix(checkpoint, weight_map, prefix, dtype)
+        layer_quantized = quantize_state_weights(state, prefix, weight_quantizer)
+        if layer_quantized <= 0:
+            raise RuntimeError(f"No paper-scope weights were quantized for {prefix}")
+        quantized_count += layer_quantized
+        layer = _assign_module(layer, state, prefix, dev)
+        layer_wrapped = len(
+            wrap_activation_linears(
+                layer,
+                activation_config,
+                prefix=prefix,
+                require_lm_head=False,
+            )
+        )
+        if layer_wrapped <= 0:
+            raise RuntimeError(f"No activation Linear modules were wrapped for {prefix}")
+        wrapped_count += layer_wrapped
+        kwargs = _layer_kwargs(layer, captured, dev)
+        output = _first_tensor(layer(hidden[0].unsqueeze(0).to(dev), **kwargs))
+        output_finite = bool(torch.isfinite(output).all().item())
+        if not output_finite:
+            raise FloatingPointError(f"Non-finite hidden state at smoke layer {layer_index}")
+        outputs[0].copy_(output.squeeze(0).detach().cpu())
+        unload_to_meta(layer)
+        hidden, outputs = outputs, hidden
+        layer_results.append(
+            {
+                "layer_index": layer_index,
+                "prefix": prefix,
+                "quantized_weight_count": layer_quantized,
+                "wrapped_linear_count": layer_wrapped,
+                "output_finite": output_finite,
+                "elapsed_seconds": time.perf_counter() - layer_started,
+            }
+        )
+        if progress:
+            print(
+                f"[streamed-layer-smoke] layer {layer_index + 1}/{max_layers} passed",
+                flush=True,
+            )
+
+    return StreamedLayerSmokeResult(
+        requested_layers=max_layers,
+        completed_layers=len(layer_results),
+        total_layers=total_layers,
+        wrapped_linear_count=wrapped_count,
+        quantized_weight_count=quantized_count,
+        model_family=plan.family,
+        layers=tuple(layer_results),
+    )
 
 
 @torch.no_grad()

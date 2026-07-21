@@ -60,6 +60,23 @@ MODEL_ROOTS=/models/hf \
   --dataset /datasets/wikitext-2-raw-v1
 ```
 
+When a complete 19-model PPL sweep is unnecessary, validate architecture and
+quantization compatibility on the first five layers of every model whose full
+MBPriorQ result is not already present:
+
+```bash
+MODEL_ROOTS=/models/hf:/models/modelscope \
+./experiments/table2/run.sh \
+  --layer-smoke 5 \
+  --dataset /datasets/wikitext-2-raw-v1
+```
+
+For each remaining model, this smoke loads one 2048-token window and performs
+real safetensors streaming, MBPriorQ weight quantization, activation wrapping,
+forward execution, finite-output checking, and unloading for layers 0-4. It
+stops before the remaining layers and does not report a partial PPL as a paper
+result. Results are written under `local_runs/table2/layer_smoke/`.
+
 Only a complete run validates the observed values against Table 2. Reduced
 sample counts are backend checks and must not be reported as paper results.
 
