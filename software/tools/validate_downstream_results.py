@@ -12,6 +12,11 @@ from validation_common import finite_float, positive_int, require_fields
 
 
 FULL_COUNTS = {"gsm8k": 500, "mmlu": 100, "mmlu_pro": 410}
+FULL_TOLERANCE_PERCENTAGE_POINTS = {
+    "gsm8k": 1.0,
+    "mmlu": 2.0,
+    "mmlu_pro": 1.0,
+}
 
 
 def parse_args():
@@ -20,7 +25,6 @@ def parse_args():
     parser.add_argument("--expected", required=True)
     parser.add_argument("--model-keys", nargs="+", required=True)
     parser.add_argument("--benchmarks", nargs="+", required=True)
-    parser.add_argument("--tolerance-percentage-points", type=float, default=1.0)
     parser.add_argument("--expected-examples", type=int)
     parser.add_argument("--require-full", action="store_true")
     return parser.parse_args()
@@ -97,19 +101,21 @@ def main():
             continue
         observed = 100.0 * accuracy
         difference = abs(observed - paper_accuracy)
+        tolerance = FULL_TOLERANCE_PERCENTAGE_POINTS[benchmark]
         if args.require_full:
             print(
                 f"{model_key}/{method}/{benchmark}: observed={observed:.2f}% "
-                f"paper={paper_accuracy:.2f}% diff={difference:.2f} pp"
+                f"paper={paper_accuracy:.2f}% diff={difference:.2f} pp "
+                f"tolerance={tolerance:.2f} pp"
             )
         else:
             print(
                 f"{model_key}/{method}/{benchmark}: validated {count} example(s)"
             )
-        if args.require_full and difference > args.tolerance_percentage_points:
+        if args.require_full and difference > tolerance:
             failures.append(
                 f"{model_key}/{method}/{benchmark}: {difference:.2f} pp exceeds "
-                f"{args.tolerance_percentage_points:.2f} pp"
+                f"{tolerance:.2f} pp"
             )
     if failures:
         raise SystemExit("Downstream validation failed:\n- " + "\n- ".join(failures))

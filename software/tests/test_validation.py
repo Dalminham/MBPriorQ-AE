@@ -123,3 +123,70 @@ def test_downstream_quick_rejects_missing_journal_row(tmp_path):
     )
     assert completed.returncode != 0
     assert "journal rows" in completed.stderr
+
+
+def _write_full_mmlu_result(tmp_path, correct):
+    journal = tmp_path / "model__bf16__mmlu.jsonl"
+    journal.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "index": index,
+                    "prediction": "A",
+                    "gold": "A" if index < correct else "B",
+                    "correct": index < correct,
+                    "response": "Answer: A",
+                }
+            )
+            + "\n"
+            for index in range(100)
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "model__bf16__mmlu.json").write_text(
+        json.dumps(
+            {
+                "benchmark": "mmlu",
+                "method": "bf16",
+                "num_examples": 100,
+                "correct": correct,
+                "accuracy": correct / 100,
+                "records_journal": journal.name,
+            }
+        ),
+        encoding="utf-8",
+    )
+    expected = tmp_path / "expected.csv"
+    expected.write_text(
+        "model_key,model,method,mmlu\nmodel,Model,bf16,41\n",
+        encoding="utf-8",
+    )
+    return expected
+
+
+def test_full_mmlu_accepts_two_percentage_point_difference(tmp_path):
+    expected = _write_full_mmlu_result(tmp_path, correct=39)
+    completed = _run(
+        "validate_downstream_results.py",
+        "--output-root", tmp_path,
+        "--expected", expected,
+        "--model-keys", "model",
+        "--benchmarks", "mmlu",
+        "--require-full",
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "tolerance=2.00 pp" in completed.stdout
+
+
+def test_full_mmlu_rejects_more_than_two_percentage_points(tmp_path):
+    expected = _write_full_mmlu_result(tmp_path, correct=38)
+    completed = _run(
+        "validate_downstream_results.py",
+        "--output-root", tmp_path,
+        "--expected", expected,
+        "--model-keys", "model",
+        "--benchmarks", "mmlu",
+        "--require-full",
+    )
+    assert completed.returncode != 0
+    assert "3.00 pp exceeds 2.00 pp" in completed.stderr

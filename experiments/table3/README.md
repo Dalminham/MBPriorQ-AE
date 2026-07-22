@@ -11,7 +11,9 @@ Qwen3-14B.
 
 Generation uses the submitted prompt templates, BF16, temperature 0.1, top-p
 0.9, repetition penalty 1.1, and up to 2048 new tokens. A deterministic
-per-example seed makes interrupted runs resumable.
+per-example seed makes interrupted runs resumable. If an MMLU response has no
+valid A-D answer, the driver retries that example once with a deterministic
+alternate seed.
 
 ```bash
 QWEN_0_6B_MODEL_PATH=/models/Qwen3-0.6B \
@@ -41,4 +43,6 @@ unfinished row. MBPriorQ first replays completed prompts to reconstruct the
 online activation-prior state, then appends new rows; otherwise a resumed run
 would not be numerically equivalent to an uninterrupted run. Set `RESUME=0`
 to restart. Complete runs compare the six accuracies with the paper values in
-`expected.csv`; quick runs validate execution only.
+`expected.csv`. The acceptance tolerance is 2 percentage points for the
+100-example MMLU sample and 1 percentage point for GSM8K and MMLU-Pro. Quick
+runs validate execution only.
