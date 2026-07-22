@@ -40,6 +40,7 @@ MMLU_PRO_INITIAL = (
     "where X is the correct letter choice.\n\n"
 )
 CHOICES = tuple("ABCDEFGHIJKLMNOP")
+RETRY_SEED_OFFSET = 1_000_000
 
 
 def parse_args():
@@ -181,8 +182,10 @@ def _input_device(model) -> torch.device:
 
 
 @torch.no_grad()
-def _generate(model, tokenizer, prompt: str, args, example_index: int) -> str:
-    seed = args.seed + example_index
+def _generate(
+    model, tokenizer, prompt: str, args, example_index: int, attempt: int = 0
+) -> str:
+    seed = args.seed + example_index + attempt * RETRY_SEED_OFFSET
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -215,9 +218,9 @@ def _last_number(text: str):
 
 def _mmlu_answer(text: str):
     patterns = (
-        r"(?i)answer\s*:\s*([A-D])",
-        r"(?i)(?:the\s+)?answer\s+is\s+([A-D])",
-        r"(?i)([A-D])\.?\s*$",
+        r"(?i)answer[ \t]*:[ \t]*([A-D])\b",
+        r"(?i)(?:the[ \t]+)?answer[ \t]+is[ \t]+([A-D])\b",
+        r"(?i)([A-D])\.?[ \t]*$",
     )
     for pattern in patterns:
         match = re.search(pattern, text)
@@ -266,6 +269,49 @@ def _load_completed(path: Path) -> list[dict]:
     return rows
 
 
+def _write_completed(path: Path, records: list[dict]):
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        "".join(json.dumps(record, ensure_ascii=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _score_mmlu_record(example: dict, record: dict, seed: int) -> bool:
+    _, prediction, gold, correct = _prompt_and_score(
+        "mmlu", example, record["response"], seed
+    )
+    updated = {
+        "prediction": prediction,
+        "gold": gold,
+        "correct": bool(correct),
+    }
+    changed = any(record.get(key) != value for key, value in updated.items())
+    record.update(updated)
+    return changed
+
+
+def _retry_mmlu_record(model, tokenizer, args, example: dict, record: dict) -> bool:
+    attempts = int(record.get("generation_attempts", 1))
+    if record.get("prediction") is not None or attempts >= 2:
+        return False
+    index = int(record["index"])
+    print(f"[mmlu] {index + 1}: no A-D answer detected; retrying once", flush=True)
+    response = _generate(
+        model,
+        tokenizer,
+        _prompt_for_example("mmlu", example),
+        args,
+        index,
+        attempt=1,
+    )
+    record["response"] = response
+    record["generation_attempts"] = 2
+    _score_mmlu_record(example, record, args.seed + index)
+    return True
+
+
 def _prompt_for_example(benchmark: str, example: dict) -> str:
     if benchmark == "gsm8k":
         return GSM8K_PROMPT + "\nQuestion: " + example["question"] + "\n"
@@ -293,13 +339,41 @@ def main():
 
     started = time.time()
 
+    records_changed = False
+    if args.benchmark == "mmlu":
+        for index, record in enumerate(records):
+            records_changed |= _score_mmlu_record(
+                examples[index], record, args.seed + index
+            )
+
     # Activation priors are runtime state. Replaying completed MBPriorQ prompts
     # restores that state before appending new records; skipping them would make
     # a resumed run numerically different from an uninterrupted run.
     if args.method == "mbpriorq" and records:
         print(f"[resume] replaying {len(records)} prompts to restore activation priors")
-        for index, example in enumerate(examples[: len(records)]):
-            _generate(model, tokenizer, _prompt_for_example(args.benchmark, example), args, index)
+        for index, (example, record) in enumerate(zip(examples, records)):
+            attempts = int(record.get("generation_attempts", 1))
+            for attempt in range(attempts):
+                _generate(
+                    model,
+                    tokenizer,
+                    _prompt_for_example(args.benchmark, example),
+                    args,
+                    index,
+                    attempt=attempt,
+                )
+            if args.benchmark == "mmlu":
+                records_changed |= _retry_mmlu_record(
+                    model, tokenizer, args, example, record
+                )
+    elif args.benchmark == "mmlu":
+        for example, record in zip(examples, records):
+            records_changed |= _retry_mmlu_record(
+                model, tokenizer, args, example, record
+            )
+
+    if records_changed:
+        _write_completed(journal, records)
 
     with journal.open("a" if args.resume else "w", encoding="utf-8") as handle:
         for index, example in enumerate(examples[len(records) :], start=len(records)):
@@ -308,12 +382,26 @@ def main():
             _, prediction, gold, correct = _prompt_and_score(
                 args.benchmark, example, response, args.seed + index
             )
+            generation_attempts = 1
+            if args.benchmark == "mmlu" and prediction is None:
+                print(
+                    f"[mmlu] {index + 1}: no A-D answer detected; retrying once",
+                    flush=True,
+                )
+                response = _generate(
+                    model, tokenizer, prompt, args, index, attempt=1
+                )
+                _, prediction, gold, correct = _prompt_and_score(
+                    args.benchmark, example, response, args.seed + index
+                )
+                generation_attempts = 2
             record = {
                 "index": index,
                 "prediction": prediction,
                 "gold": gold,
                 "correct": bool(correct),
                 "response": response,
+                "generation_attempts": generation_attempts,
             }
             handle.write(json.dumps(record, ensure_ascii=True) + "\n")
             handle.flush()
@@ -336,6 +424,9 @@ def main():
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "top_p": args.top_p,
+        "generation_retry_count": sum(
+            int(record.get("generation_attempts", 1)) > 1 for record in records
+        ),
         "load_backend": args.load_backend,
         "wrapped_linear_count": len(wrapped),
         "weight_ebw_summary": (
