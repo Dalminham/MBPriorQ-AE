@@ -42,6 +42,7 @@ MMLU_PRO_INITIAL = (
 CHOICES = tuple("ABCDEFGHIJKLMNOP")
 RETRY_SEED_OFFSET = 1_000_000
 MMLU_PRO_MAX_INPUT_TOKENS = 2048
+GSM8K_NUMBER_PATTERN = r"[+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
 
 
 def parse_args():
@@ -246,9 +247,27 @@ def _generate(
     return tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
 
 
-def _last_number(text: str):
-    matches = re.findall(r"\d+\.?\d*", text.replace(",", ""))
-    return float(matches[-1]) if matches else None
+def _gsm8k_answer(text: str):
+    value_prefix = r"(?:\\?\$[ \t]*)?(?:\\boxed\{[ \t]*)?"
+    patterns = (
+        rf"(?i)\bthe[ \t]+(?:final[ \t]+)?answer[ \t]+is[ \t]+{value_prefix}"
+        rf"({GSM8K_NUMBER_PATTERN})",
+        rf"(?i)\bfinal[ \t]+answer[ \t]*(?::|=|is)[ \t]*{value_prefix}"
+        rf"({GSM8K_NUMBER_PATTERN})",
+        rf"(?im)^[ \t*#]*answer[ \t*]*:[ \t]*{value_prefix}"
+        rf"({GSM8K_NUMBER_PATTERN})",
+    )
+    matches = []
+    for pattern in patterns:
+        matches.extend((match.start(), match.group(1)) for match in re.finditer(pattern, text))
+    if not matches:
+        return None
+    return float(max(matches)[1].replace(",", ""))
+
+
+def _gsm8k_gold(text: str):
+    matches = re.findall(rf"####[ \t]*({GSM8K_NUMBER_PATTERN})", text)
+    return float(matches[-1].replace(",", "")) if matches else None
 
 
 def _mmlu_answer(text: str):
@@ -278,8 +297,8 @@ def _mmlu_pro_answer(text: str):
 
 def _prompt_and_score(benchmark: str, example: dict, response: str, seed: int):
     if benchmark == "gsm8k":
-        prediction = _last_number(response)
-        gold = _last_number(str(example["answer"]))
+        prediction = _gsm8k_answer(response)
+        gold = _gsm8k_gold(str(example["answer"]))
         return GSM8K_PROMPT + "\nQuestion: " + example["question"] + "\n", prediction, gold, (
             prediction is not None and gold is not None and abs(prediction - gold) < 1e-6
         )
@@ -316,9 +335,11 @@ def _write_completed(path: Path, records: list[dict]):
     temporary.replace(path)
 
 
-def _score_mmlu_record(example: dict, record: dict, seed: int) -> bool:
+def _score_retryable_record(
+    benchmark: str, example: dict, record: dict, seed: int
+) -> bool:
     _, prediction, gold, correct = _prompt_and_score(
-        "mmlu", example, record["response"], seed
+        benchmark, example, record["response"], seed
     )
     updated = {
         "prediction": prediction,
@@ -330,23 +351,24 @@ def _score_mmlu_record(example: dict, record: dict, seed: int) -> bool:
     return changed
 
 
-def _retry_mmlu_record(model, tokenizer, args, example: dict, record: dict) -> bool:
+def _retry_record(model, tokenizer, args, example: dict, record: dict) -> bool:
     attempts = int(record.get("generation_attempts", 1))
     if record.get("prediction") is not None or attempts >= 2:
         return False
     index = int(record["index"])
-    print(f"[mmlu] {index + 1}: no A-D answer detected; retrying once", flush=True)
+    missing = "no explicit numerical answer" if args.benchmark == "gsm8k" else "no A-D answer"
+    print(f"[{args.benchmark}] {index + 1}: {missing} detected; retrying once", flush=True)
     response = _generate(
         model,
         tokenizer,
-        _prompt_for_example("mmlu", example),
+        _prompt_for_example(args.benchmark, example),
         args,
         index,
         attempt=1,
     )
     record["response"] = response
     record["generation_attempts"] = 2
-    _score_mmlu_record(example, record, args.seed + index)
+    _score_retryable_record(args.benchmark, example, record, args.seed + index)
     return True
 
 
@@ -380,10 +402,10 @@ def main():
     started = time.time()
 
     records_changed = False
-    if args.benchmark == "mmlu":
+    if args.benchmark in ("gsm8k", "mmlu"):
         for index, record in enumerate(records):
-            records_changed |= _score_mmlu_record(
-                examples[index], record, args.seed + index
+            records_changed |= _score_retryable_record(
+                args.benchmark, examples[index], record, args.seed + index
             )
 
     # Activation priors are runtime state. Replaying completed MBPriorQ prompts
@@ -402,13 +424,13 @@ def main():
                     index,
                     attempt=attempt,
                 )
-            if args.benchmark == "mmlu":
-                records_changed |= _retry_mmlu_record(
+            if args.benchmark in ("gsm8k", "mmlu"):
+                records_changed |= _retry_record(
                     model, tokenizer, args, example, record
                 )
-    elif args.benchmark == "mmlu":
+    elif args.benchmark in ("gsm8k", "mmlu"):
         for example, record in zip(examples, records):
-            records_changed |= _retry_mmlu_record(
+            records_changed |= _retry_record(
                 model, tokenizer, args, example, record
             )
 
@@ -423,9 +445,14 @@ def main():
                 args.benchmark, example, response, args.seed + index
             )
             generation_attempts = 1
-            if args.benchmark == "mmlu" and prediction is None:
+            if args.benchmark in ("gsm8k", "mmlu") and prediction is None:
+                missing = (
+                    "no explicit numerical answer"
+                    if args.benchmark == "gsm8k"
+                    else "no A-D answer"
+                )
                 print(
-                    f"[mmlu] {index + 1}: no A-D answer detected; retrying once",
+                    f"[{args.benchmark}] {index + 1}: {missing} detected; retrying once",
                     flush=True,
                 )
                 response = _generate(

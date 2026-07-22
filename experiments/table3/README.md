@@ -11,9 +11,11 @@ Qwen3-14B.
 
 Generation uses the submitted prompt templates, BF16, temperature 0.1, top-p
 0.9, repetition penalty 1.1, and up to 2048 new tokens. A deterministic
-per-example seed makes interrupted runs resumable. If an MMLU response has no
-valid A-D answer, the driver retries that example once with a deterministic
-alternate seed.
+per-example seed makes interrupted runs resumable. GSM8K scores the last
+explicit `The answer is ...` or `Final Answer: ...` value, rather than an
+unrelated trailing number. If GSM8K has no explicit numerical answer or MMLU
+has no valid A-D answer, the driver retries that example once with a
+deterministic alternate seed.
 
 ```bash
 QWEN_0_6B_MODEL_PATH=/models/Qwen3-0.6B \

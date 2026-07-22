@@ -23,6 +23,25 @@ def _mmlu_example(answer="D"):
     }
 
 
+def _gsm8k_example(answer="#### 1,200"):
+    return {"question": "Example?", "answer": answer}
+
+
+def test_gsm8k_answer_uses_explicit_answer_instead_of_trailing_numbers():
+    response = (
+        "The answer is $40.\nAfter checking, the answer is $100.\n"
+        "```python\ntotal_cost = 300\nvalue = total_cost / 2"
+    )
+    assert RUNNER._gsm8k_answer(response) == 100.0
+
+
+def test_gsm8k_answer_supports_signed_comma_decimal_and_boxed_formats():
+    assert RUNNER._gsm8k_answer(r"Final Answer: $\boxed{-1,234.5}$") == -1234.5
+    assert RUNNER._gsm8k_answer("No explicit final value; intermediate value = 42") is None
+    assert RUNNER._gsm8k_answer("# Final answer\nanswer = 64 / 8") is None
+    assert RUNNER._gsm8k_gold("work\n#### 1,200") == 1200.0
+
+
 def test_mmlu_answer_does_not_treat_next_answer_word_as_option_a():
     assert RUNNER._mmlu_answer("Answer:\nAnswer: D") == "D"
     assert RUNNER._mmlu_answer("Answer:\nExplanation without a final choice") is None
@@ -105,8 +124,9 @@ def test_mmlu_retry_runs_once_with_the_retry_seed(monkeypatch):
         "correct": False,
         "response": "No final selection.",
     }
-    changed = RUNNER._retry_mmlu_record(
-        object(), object(), SimpleNamespace(seed=0), _mmlu_example(), record
+    args = SimpleNamespace(seed=0, benchmark="mmlu")
+    changed = RUNNER._retry_record(
+        object(), object(), args, _mmlu_example(), record
     )
 
     assert changed is True
@@ -116,9 +136,37 @@ def test_mmlu_retry_runs_once_with_the_retry_seed(monkeypatch):
     assert record["correct"] is True
 
     assert (
-        RUNNER._retry_mmlu_record(
-            object(), object(), SimpleNamespace(seed=0), _mmlu_example(), record
-        )
+        RUNNER._retry_record(object(), object(), args, _mmlu_example(), record)
         is False
     )
     assert calls == [(7, 1)]
+
+
+def test_gsm8k_retry_runs_once_when_explicit_answer_is_missing(monkeypatch):
+    calls = []
+
+    def fake_generate(model, tokenizer, prompt, args, example_index, attempt=0):
+        calls.append((example_index, attempt))
+        return "The answer is $1,200."
+
+    monkeypatch.setattr(RUNNER, "_generate", fake_generate)
+    record = {
+        "index": 3,
+        "prediction": None,
+        "gold": 1200.0,
+        "correct": False,
+        "response": "Intermediate calculation: 600 * 2",
+    }
+    changed = RUNNER._retry_record(
+        object(),
+        object(),
+        SimpleNamespace(seed=0, benchmark="gsm8k"),
+        _gsm8k_example(),
+        record,
+    )
+
+    assert changed is True
+    assert calls == [(3, 1)]
+    assert record["generation_attempts"] == 2
+    assert record["prediction"] == 1200.0
+    assert record["correct"] is True
