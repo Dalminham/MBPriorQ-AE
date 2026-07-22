@@ -7,7 +7,7 @@ Qwen3-14B.
 |---|---|
 | GSM8K | 500 examples sampled with `random.Random(0)` from the 1,319-row test set; last numerical answer; tolerance `1e-6`. |
 | MMLU | 100 examples sampled with `random.Random(0)` from `mmlu.csv`; final A-D answer. |
-| MMLU-Pro | All 410 `computer science` test rows; first five matching validation examples as CoT demonstrations; final A-J answer. |
+| MMLU-Pro | All 410 `computer science` test rows; up to five matching validation examples as CoT demonstrations, reduced only when needed to preserve the target question within the submitted 2048-token input budget; final A-J answer. |
 
 Generation uses the submitted prompt templates, BF16, temperature 0.1, top-p
 0.9, repetition penalty 1.1, and up to 2048 new tokens. A deterministic

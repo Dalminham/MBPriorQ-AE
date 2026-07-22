@@ -2,6 +2,8 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
+import torch
+
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = ROOT / "software/tools/run_downstream_benchmark.py"
@@ -24,6 +26,68 @@ def _mmlu_example(answer="D"):
 def test_mmlu_answer_does_not_treat_next_answer_word_as_option_a():
     assert RUNNER._mmlu_answer("Answer:\nAnswer: D") == "D"
     assert RUNNER._mmlu_answer("Answer:\nExplanation without a final choice") is None
+
+
+def test_mmlu_pro_answer_does_not_cross_line_boundaries():
+    assert RUNNER._mmlu_pro_answer("Answer:\nAnswer: D") == "D"
+
+
+def test_mmlu_pro_prompt_reduces_demonstrations_to_keep_target():
+    class CharacterTokenizer:
+        def __call__(self, text, add_special_tokens=True):
+            return {"input_ids": list(range(len(text)))}
+
+    demonstrations = [
+        {
+            "question": f"demo {index}",
+            "options": ["one", "two"],
+            "cot_content": "A: Let's think step by step. " + "x" * 80,
+        }
+        for index in range(5)
+    ]
+    example = {
+        "question": "target question",
+        "options": ["one", "two"],
+        "category": "computer science",
+        "_mmlu_pro_demonstrations": demonstrations,
+    }
+    prompt, count, token_count = RUNNER._select_mmlu_pro_prompt(
+        example, CharacterTokenizer(), max_input_tokens=500
+    )
+
+    assert count < 5
+    assert token_count <= 500
+    assert "target question" in prompt
+
+
+def test_generate_decodes_only_new_tokens():
+    class FakeTokenizer:
+        eos_token_id = 0
+
+        def __call__(self, text, **kwargs):
+            return {
+                "input_ids": torch.tensor([[1, 2, 3]]),
+                "attention_mask": torch.tensor([[1, 1, 1]]),
+            }
+
+        def decode(self, tokens, skip_special_tokens=True):
+            return ",".join(str(int(token)) for token in tokens)
+
+    class FakeModel:
+        def get_input_embeddings(self):
+            return SimpleNamespace(weight=torch.zeros(1))
+
+        def generate(self, **kwargs):
+            return torch.tensor([[1, 2, 3, 9, 10]])
+
+    args = SimpleNamespace(
+        seed=0,
+        benchmark="mmlu",
+        max_new_tokens=2,
+        temperature=0.1,
+        top_p=0.9,
+    )
+    assert RUNNER._generate(FakeModel(), FakeTokenizer(), "prompt", args, 0) == "9,10"
 
 
 def test_mmlu_retry_runs_once_with_the_retry_seed(monkeypatch):

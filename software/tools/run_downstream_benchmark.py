@@ -41,6 +41,7 @@ MMLU_PRO_INITIAL = (
 )
 CHOICES = tuple("ABCDEFGHIJKLMNOP")
 RETRY_SEED_OFFSET = 1_000_000
+MMLU_PRO_MAX_INPUT_TOKENS = 2048
 
 
 def parse_args():
@@ -111,16 +112,44 @@ def _load_mmlu_pro(path: Path, limit: int, _seed: int):
     validation = [dict(row) for row in dataset["validation"] if row["category"] == category]
     tests = [dict(row) for row in dataset["test"] if row["category"] == category]
     tests = tests[:limit] if limit else tests
+    demonstrations = validation[:5]
     examples = []
     for test in tests:
         prompt = MMLU_PRO_INITIAL.replace("{$}", category) + "\n"
-        for example in validation[:5]:
+        for example in demonstrations:
             prompt += _format_mmlu_pro_example(example, True)
         prompt += _format_mmlu_pro_example(test, False)
         item = dict(test)
         item["prompt"] = prompt
+        item["_mmlu_pro_demonstrations"] = demonstrations
         examples.append(item)
     return examples
+
+
+def _select_mmlu_pro_prompt(example: dict, tokenizer, max_input_tokens: int):
+    demonstrations = example["_mmlu_pro_demonstrations"]
+    category = example["category"]
+    for count in range(len(demonstrations), -1, -1):
+        prompt = MMLU_PRO_INITIAL.replace("{$}", category) + "\n"
+        for demonstration in demonstrations[:count]:
+            prompt += _format_mmlu_pro_example(demonstration, True)
+        prompt += _format_mmlu_pro_example(example, False)
+        input_text = f"User: {prompt}\n\nAssistant:"
+        input_ids = tokenizer(input_text, add_special_tokens=True)["input_ids"]
+        if len(input_ids) <= max_input_tokens:
+            return prompt, count, len(input_ids)
+    raise ValueError("MMLU-Pro target question does not fit the 2048-token input budget")
+
+
+def _fit_mmlu_pro_prompts(examples: list[dict], tokenizer):
+    for example in examples:
+        prompt, count, token_count = _select_mmlu_pro_prompt(
+            example, tokenizer, MMLU_PRO_MAX_INPUT_TOKENS
+        )
+        example["prompt"] = prompt
+        example["few_shot_examples"] = count
+        example["input_token_count"] = token_count
+        del example["_mmlu_pro_demonstrations"]
 
 
 def _load_examples(args):
@@ -190,12 +219,18 @@ def _generate(
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     input_text = f"User: {prompt}\n\nAssistant:"
-    inputs = tokenizer(
-        input_text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=1024,
-    )
+    if args.benchmark == "mmlu_pro":
+        inputs = tokenizer(input_text, return_tensors="pt", truncation=False)
+        if inputs["input_ids"].shape[-1] > MMLU_PRO_MAX_INPUT_TOKENS:
+            raise ValueError("MMLU-Pro prompt exceeds the 2048-token input budget")
+    else:
+        inputs = tokenizer(
+            input_text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=1024,
+        )
+    input_token_count = inputs["input_ids"].shape[-1]
     inputs = {key: value.to(_input_device(model)) for key, value in inputs.items()}
     outputs = model.generate(
         **inputs,
@@ -207,8 +242,8 @@ def _generate(
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id,
     )
-    decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return decoded.split("Assistant:")[-1].strip()
+    generated_tokens = outputs[0][input_token_count:]
+    return tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
 
 
 def _last_number(text: str):
@@ -230,7 +265,10 @@ def _mmlu_answer(text: str):
 
 
 def _mmlu_pro_answer(text: str):
-    for pattern in (r"(?i)answer is \(?([A-J])\)?", r"(?i)answer:\s*([A-J])"):
+    for pattern in (
+        r"(?i)answer[ \t]+is[ \t]+\(?([A-J])\)?",
+        r"(?i)answer[ \t]*:[ \t]*([A-J])\b",
+    ):
         match = re.search(pattern, text)
         if match:
             return match.group(1).upper()
@@ -327,6 +365,8 @@ def main():
         raise RuntimeError("The downstream workflow requires CUDA")
     examples = _load_examples(args)
     model, tokenizer, wrapped, checkpoint_metadata = _load_model(args)
+    if args.benchmark == "mmlu_pro":
+        _fit_mmlu_pro_prompts(examples, tokenizer)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     journal = output.with_suffix(".jsonl")
@@ -426,6 +466,17 @@ def main():
         "top_p": args.top_p,
         "generation_retry_count": sum(
             int(record.get("generation_attempts", 1)) > 1 for record in records
+        ),
+        "mmlu_pro_few_shot_counts": (
+            {
+                str(count): sum(
+                    example.get("few_shot_examples") == count for example in examples
+                )
+                for count in range(6)
+                if any(example.get("few_shot_examples") == count for example in examples)
+            }
+            if args.benchmark == "mmlu_pro"
+            else None
         ),
         "load_backend": args.load_backend,
         "wrapped_linear_count": len(wrapped),
