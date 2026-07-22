@@ -5,7 +5,6 @@
 | [`smoke_test/`](smoke_test/README.md) | Lightweight BF16/MBPriorQ reproduction and streamed-execution equivalence | PPL, NLL, and EBW |
 | [`table2/`](table2/README.md) | Tables 2 and 10 | 19-model PPL and side-metadata EBW |
 | [`table3/`](table3/README.md) | Table 3 | GSM8K, MMLU, and MMLU-Pro accuracy |
-| [`table4/`](table4/README.md) | Table 4 | Feature-selection PPL |
 | [`table5/`](table5/README.md) | Table 5 | Accuracy attribution PPL and EBW |
 | [`table6/`](table6/README.md) | Table 6 | Refined-granularity PPL and EBW |
 | [`table7/`](table7/README.md) | Table 7 | VMB-prior robustness statistics |

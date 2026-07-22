@@ -87,10 +87,7 @@ software_quick() {
     OUTPUT_ROOT="${output}/table3" CHECKPOINT_ROOT="${checkpoints}" RESUME=0 \
     "${ROOT}/experiments/table3/run_quick.sh"
 
-  echo "[validate] Tables 4-6 reduced ablation paths"
-  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" LLAMA_MODEL_PATH="${LLAMA_MODEL_PATH}" \
-    DATASET_PATH="${WIKITEXT_PATH}" OUTPUT_ROOT="${output}/table4" \
-    "${ROOT}/experiments/table4/run_quick.sh"
+  echo "[validate] Tables 5 and 6 reduced ablation paths"
   QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" LLAMA_MODEL_PATH="${LLAMA_MODEL_PATH}" \
     DATASET_PATH="${WIKITEXT_PATH}" OUTPUT_ROOT="${output}/table5" \
     CHECKPOINT_ROOT="${checkpoints}" "${ROOT}/experiments/table5/run_quick.sh"

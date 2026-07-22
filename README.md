@@ -58,7 +58,6 @@ Run `./validate.sh hardware` for the complete SpinalHDL functional regression.
 |---|---|---|
 | Tables 2 and 10 | [`experiments/table2/`](experiments/table2/README.md) | BF16/MBPriorQ PPL and side-metadata EBW for 19 model entries |
 | Table 3 | [`experiments/table3/`](experiments/table3/README.md) | GSM8K, MMLU, and MMLU-Pro |
-| Table 4 | [`experiments/table4/`](experiments/table4/README.md) | Feature-selection PPL on Qwen3-0.6B and Llama2-7B |
 | Table 5 | [`experiments/table5/`](experiments/table5/README.md) | Activation-prior accuracy attribution on both models |
 | Table 6 | [`experiments/table6/`](experiments/table6/README.md) | 16-to-{8,4,2} refined-granularity ablation on both models |
 | Table 7 | [`experiments/table7/`](experiments/table7/README.md) | VMB-prior robustness under five input-variation axes |
