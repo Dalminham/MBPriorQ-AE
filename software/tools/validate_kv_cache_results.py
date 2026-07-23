@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--expected", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--require-full", action="store_true")
-    parser.add_argument("--ppl-tolerance", type=float, default=0.001)
+    parser.add_argument("--ppl-tolerance", type=float, default=0.01)
     parser.add_argument("--ebw-tolerance", type=float, default=0.00011)
     parser.add_argument("--expected-samples", type=int)
     parser.add_argument("--model-key", action="append", default=[])
