@@ -1,22 +1,41 @@
 # MBPriorQ Artifact Evaluation
 
-This repository contains the software and hardware artifact for:
+This repository contains the software and hardware artifacts for:
 
 > **Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization
 > for Robust LLM Inference Across Model Families**
 
+The software reproduces Tables 2, 3, 5-8, and 10. The hardware artifact
+provides functional verification of the MBPriorQ accelerator.
+
 ## Repository Structure
 
-- [`software/`](software/README.md): MBPriorQ quantization, low-memory execution,
-  shared experiment tools, and unit tests.
-- [`hardware/`](hardware/README.md): SpinalHDL accelerator sources and functional
-  verification.
-- [`experiments/`](experiments/README.md): paper-result workflows organized by
-  table number.
-- [`data/imatrix/`](data/imatrix/README.md): the Qwen3-0.6B importance matrix used
-  for weight quantization.
+```text
+MBPriorQ-AE/
+├── software/          MBPriorQ quantization and evaluation implementation
+├── experiments/       software workflows organized by paper table
+├── hardware/          SpinalHDL sources and functional simulations
+├── data/imatrix/      Qwen3-0.6B importance matrix
+├── environment.yml    common software and hardware environment
+└── validate.sh        repository and workflow validation entry point
+```
 
-## Setup
+- [`software/`](software/README.md) contains W4A4 quantization, VMB selection,
+  online activation-prior refinement, layer-streamed execution, KV-cache
+  quantization, EBW accounting, and shared experiment drivers.
+- [`experiments/`](experiments/README.md) contains the commands, reference
+  values, and validators for each reproduced paper table.
+- [`hardware/`](hardware/README.md) contains the accelerator RTL, module-level
+  testbenches, complete-system testbench, and checked-in expected results.
+- [`data/imatrix/`](data/imatrix/README.md) contains the importance matrix used
+  automatically by Qwen3-0.6B weight quantization.
+
+All generated checkpoints, logs, CSVs, and JSON summaries are written below the
+ignored `local_runs/` directory.
+
+## Software Reproduction
+
+Create the common environment from the repository root:
 
 ```bash
 conda env create -f environment.yml
@@ -24,10 +43,10 @@ conda activate mbpriorq-ae
 python -m pytest -q software/tests
 ```
 
-## Lightweight Reproduction
+### Lightweight Reproduction
 
-Qwen3-0.6B provides the shortest complete path from a public BF16 checkpoint to
-the paper's BF16 and W4A4 MBPriorQ WikiText2 results:
+The shortest complete reproduction evaluates BF16 and W4A4 MBPriorQ on all 146
+contiguous 2048-token WikiText2 windows with Qwen3-0.6B:
 
 ```bash
 MODEL_PATH=/path/to/Qwen3-0.6B \
@@ -35,65 +54,83 @@ DATASET_PATH=/path/to/wikitext-2-raw-v1 \
 ./experiments/smoke_test/run.sh
 ```
 
-The full workflow evaluates all 146 contiguous 2048-token windows. Use
-`run_quick.sh` for a four-window execution check. Generated checkpoints, logs,
-and results are written below the ignored `local_runs/` directory.
+The expected WikiText2 PPL values are `20.9240` for BF16 and `24.2289` for
+W4A4 MBPriorQ. A successful run ends with a validation PASS line.
 
-## Artifact Validation
-
-Run syntax checks and dependency-light tests with:
+For a short execution-path check, use:
 
 ```bash
-./validate.sh
+MODEL_PATH=/path/to/Qwen3-0.6B \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
+./experiments/smoke_test/run_quick.sh
 ```
 
-`./validate.sh software-quick` exercises every software workflow with reduced
-inputs. It requires the Qwen3-0.6B path and five dataset paths documented by
-the experiment READMEs. The three downstream benchmarks use one example each.
-Run `./validate.sh hardware` for the complete SpinalHDL functional regression.
+The layer-streamed backend reduces GPU-memory demand by keeping hidden states
+in CPU memory and loading one decoder layer onto the GPU at a time. The
+following workflow compares full-GPU and layer-streamed execution on the same
+Qwen3-0.6B checkpoints:
 
-## Paper Reproduction
+```bash
+MODEL_PATH=/path/to/Qwen3-0.6B \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
+./experiments/smoke_test/run_offload_equivalence.sh
+```
 
-| Paper result | Entry point | Coverage |
-|---|---|---|
-| Tables 2 and 10 | [`experiments/table2/`](experiments/table2/README.md) | BF16/MBPriorQ PPL and side-metadata EBW for 19 model entries |
-| Table 3 | [`experiments/table3/`](experiments/table3/README.md) | GSM8K, MMLU, and MMLU-Pro |
-| Table 5 | [`experiments/table5/`](experiments/table5/README.md) | Activation-prior accuracy attribution on both models |
-| Table 6 | [`experiments/table6/`](experiments/table6/README.md) | 16-to-{8,4,2} refined-granularity ablation on both models |
-| Table 7 | [`experiments/table7/`](experiments/table7/README.md) | VMB-prior robustness under five input-variation axes |
-| Table 8 | [`experiments/table8/`](experiments/table8/README.md) | BF16, NVFP4, and MBPriorQ KV-cache quantization |
+### Paper Results
 
-Each directory provides a complete `run.sh`, a reduced `run_quick.sh` where
-useful, the paper reference values, required inputs, and generated outputs.
+| Paper result | Reproduction workflow |
+|---|---|
+| Tables 2 and 10: model-family PPL and side-metadata EBW | [`experiments/table2/`](experiments/table2/README.md) |
+| Table 3: GSM8K, MMLU, and MMLU-Pro accuracy | [`experiments/table3/`](experiments/table3/README.md) |
+| Table 5: activation-prior accuracy attribution | [`experiments/table5/`](experiments/table5/README.md) |
+| Table 6: refined-granularity ablation | [`experiments/table6/`](experiments/table6/README.md) |
+| Table 7: VMB-prior robustness under input variation | [`experiments/table7/`](experiments/table7/README.md) |
+| Table 8: KV-cache quantization | [`experiments/table8/`](experiments/table8/README.md) |
 
-## Hardware Verification
+Each directory provides `run.sh` for the paper protocol and an `expected.csv`
+or equivalent reference file for result validation. A `run_quick.sh` entry is
+also provided where a reduced execution-path check is useful. Tables 2 and 10
+share one execution: every MBPriorQ PPL result is emitted together with its
+mask, scale, and total EBW.
+
+Run repository checks with:
+
+```bash
+./validate.sh static unit
+```
+
+## Hardware Reproduction
+
+Activate the same environment and run:
 
 ```bash
 conda activate mbpriorq-ae
-./hardware/run_all.sh
+
+./hardware/run_modules.sh   # five module-level simulations
+./hardware/run_system.sh    # complete 16-lane 1024-bit packet path
+./hardware/run_all.sh       # both workflows
 ```
 
-The hardware workflow checks metadata and scale handling, regular/refined
-MultiMSA execution, shared FPU allocation, matrix-scale synchronization, and the
-complete 1024-bit packet input/output path.
+The module workflow verifies the scale reconstructor, packet scheduler, shared
+FPU pool, regular/refined MultiMSA paths, and output-pair join. The system
+workflow drives the complete packet interface with independent weight and
+activation masks, reordered metadata, mixed regular/refined blocks, and output
+backpressure.
 
-## Models And Data
+Each testbench computes or declares its expected functional result before
+writing a CSV. [`hardware/validate_results.py`](hardware/validate_results.py)
+then checks the generated CSV semantically and compares it with the
+corresponding file under [`hardware/expected/`](hardware/expected/).
 
-Model identifiers and local aliases for the complete model-family study are in
-[`experiments/table2/models.json`](experiments/table2/models.json). WikiText2 is
-used for PPL, PTB and MMLU-Pro provide Table 7 input variations, and GSM8K,
-MMLU, and MMLU-Pro provide downstream tasks.
+Generated results are written to:
 
-Only Qwen3-0.6B weight quantization consumes the bundled imatrix. All model
-checkpoints and datasets are supplied locally through the paths documented by
-each experiment.
+```text
+local_runs/hardware_modules/
+local_runs/hardware_system/
+```
 
-For models that do not fit entirely in GPU memory, the streamed backend keeps
-the hidden states in CPU memory and transfers one decoder layer to the GPU at a
-time. This reduces peak GPU-memory requirements and enables the large-model PPL
-workflows on memory-constrained GPUs.
+A successful complete run ends with:
 
-## Citation
-
-Citation metadata is provided in [`CITATION.cff`](CITATION.cff). The artifact is
-released under the Apache License 2.0.
+```text
+Hardware functional and golden-result validation passed.
+```

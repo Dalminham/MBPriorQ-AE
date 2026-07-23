@@ -11,8 +11,7 @@ DATASET_PATH=/datasets/wikitext-2-raw-v1 \
 ```
 
 Weights are quantized in memory for each granularity instead of writing six
-large intermediate checkpoints. Qwen3-0.6B alone consumes the bundled
-imatrix; Llama2-7B explicitly does not. Full results are validated against
-[`expected.csv`](expected.csv). `run_quick.sh` checks the three Qwen3-0.6B
-granularities with one window; the complete `run.sh` remains the two-model
-protocol.
+large intermediate checkpoints. Qwen3-0.6B uses the bundled imatrix. Full
+results are validated against [`expected.csv`](expected.csv). `run_quick.sh`
+checks the three Qwen3-0.6B granularities with one window; the complete
+`run.sh` remains the two-model protocol.

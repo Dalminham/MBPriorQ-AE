@@ -23,10 +23,9 @@ MMLU_PRO_PATH=/path/to/MMLU-Pro \
 ```
 
 The driver generates MBPriorQ checkpoints once and reuses them across the
-profiles. Qwen3-0.6B weight quantization uses the included imatrix; Llama2-7B
-does not use one. The final outputs are
+profiles. Qwen3-0.6B weight quantization uses the included imatrix. The final
+outputs are
 `local_runs/table7/table7_vmb_prior_robustness.csv` and a
 run-level detail table beside it.
 
 `run_quick.sh` exercises all five axes on Qwen3-0.6B with reduced input counts.
-It is an execution check, not paper evidence.

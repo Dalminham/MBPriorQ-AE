@@ -8,6 +8,7 @@ sequence axis and V along the head dimension.
 ```bash
 QWEN_MODEL_PATH=/path/to/Qwen3-0.6B \
 LLAMA_MODEL_PATH=/path/to/Llama-2-7b-hf \
+DATASET_PATH=/path/to/wikitext-2-raw-v1 \
 ./experiments/table8/run.sh
 ```
 

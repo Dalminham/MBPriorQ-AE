@@ -10,7 +10,7 @@ safetensors streaming, so the complete checkpoint does not need to fit VRAM.
 Qwen3-VL is evaluated through its language path on text-only WikiText2, matching
 the paper protocol.
 
-## Run The Complete Table
+## Reproduce Tables 2 and 10
 
 Place the public model checkpoints below one or more roots, then run:
 
@@ -39,10 +39,11 @@ row, and writes two final summaries:
 - `side_metadata_overhead.csv`: one MBPriorQ side-metadata row per model plus
   the 19-model average for Table 10.
 
-The complete run validates both summaries against [`models.json`](models.json)
-and [`expected_side_metadata.csv`](expected_side_metadata.csv).
+The complete run validates model coverage and PPL values against
+[`models.json`](models.json), and side-metadata results against
+[`expected_side_metadata.csv`](expected_side_metadata.csv).
 
-## Fast Checks
+## Check Model Compatibility
 
 Validate model paths and checkpoint layouts without reading weights:
 
@@ -51,18 +52,8 @@ MODEL_ROOTS=/models/hf:/models/modelscope \
 ./experiments/table2/run.sh --preflight-only
 ```
 
-Exercise one model and one PPL window:
-
-```bash
-MODEL_ROOTS=/models/hf \
-./experiments/table2/run.sh \
-  --only qwen3_0_6b --num-samples 1 \
-  --dataset /datasets/wikitext-2-raw-v1
-```
-
-When a complete 19-model PPL sweep is unnecessary, validate architecture and
-quantization compatibility on the first five layers of every model whose full
-MBPriorQ result is not already present:
+Exercise architecture, streaming, and quantization compatibility on the first
+five layers:
 
 ```bash
 MODEL_ROOTS=/models/hf:/models/modelscope \
@@ -71,19 +62,7 @@ MODEL_ROOTS=/models/hf:/models/modelscope \
   --dataset /datasets/wikitext-2-raw-v1
 ```
 
-For each remaining model, this smoke loads one 2048-token window and performs
-real safetensors streaming, MBPriorQ weight quantization, activation wrapping,
-forward execution, finite-output checking, and unloading for layers 0-4. It
-stops before the remaining layers and does not report a partial PPL as a paper
-result. Results are written under `local_runs/table2/layer_smoke/`.
-
-Only a complete run validates the observed values against Table 2. Reduced
-sample counts are backend checks and must not be reported as paper results.
-
-## Resource Notes
-
-The complete table is storage- and time-intensive. Paper-compatible weight
-fake quantization remains tensor-level and CPU-resident before each streamed
-layer is sent to the GPU. The largest MBPriorQ rows can therefore take a day or
-longer even though only one layer occupies VRAM. Only Qwen3-0.6B consumes the
-bundled imatrix; the runner rejects that metadata for every other model.
+The runner retains existing complete MBPriorQ PPL entries and applies this check
+to the remaining models. It loads one 2048-token window, streams layers 0-4,
+applies MBPriorQ weight and activation quantization, verifies finite outputs,
+and writes the results under `local_runs/table2/layer_smoke/`.

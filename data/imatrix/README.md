@@ -10,8 +10,7 @@ used by the paper's Qwen3-0.6B MBPriorQ weight fake quantization.
 - Public source URL:
   `https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B.imatrix`
 
-This is the **only** model in the artifact that uses an imatrix. Public drivers
-require it for Qwen3-0.6B and reject it for every other model.
+The Qwen3-0.6B workflows load this file automatically.
 
 The file contains per-input-channel calibration statistics, not model weights.
 The associated Qwen license is retained as [`QWEN3_LICENSE`](QWEN3_LICENSE).
