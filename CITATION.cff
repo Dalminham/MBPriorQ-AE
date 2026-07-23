@@ -3,6 +3,9 @@ message: "If you use this artifact, please cite the MBPriorQ paper and artifact 
 title: "MBPriorQ Artifact Evaluation"
 type: software
 version: "1.0.0"
+doi: "10.5281/zenodo.21505490"
+date-released: "2026-07-23"
+url: "https://github.com/Dalminham/MBPriorQ-AE"
 license: Apache-2.0
 abstract: >-
   Artifact for the MICRO 2026 paper Software-Hardware Co-Design of Prior-Aware

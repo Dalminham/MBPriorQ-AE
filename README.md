@@ -1,5 +1,7 @@
 # MBPriorQ Artifact Evaluation
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21505490.svg)](https://doi.org/10.5281/zenodo.21505490)
+
 This repository contains the software and hardware artifacts for:
 
 > **Software-Hardware Co-Design of Prior-Aware W4A4 Micro-Block Quantization
