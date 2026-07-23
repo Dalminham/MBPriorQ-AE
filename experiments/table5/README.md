@@ -11,8 +11,9 @@ DATASET_PATH=/datasets/wikitext-2-raw-v1 \
 ./experiments/table5/run.sh
 ```
 
-Qwen3-0.6B uses the bundled imatrix and the full-GPU backend. Llama2-7B uses
-no imatrix and runs through the streamed backend. The script reuses one
+Qwen3-0.6B uses the bundled imatrix and the full-GPU backend. Llama2-7B uses no
+imatrix and follows the paper-compatible by-layer path: the model remains in CPU
+memory while one decoder layer at a time moves to the GPU. The script reuses one
 16-to-4 fake-quantized checkpoint per model because all attribution rows share
 identical weights.
 

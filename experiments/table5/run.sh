@@ -53,14 +53,14 @@ fi
 if [[ " ${MODEL_KEYS} " == *" llama2_7b "* ]]; then
   "${PYTHON}" "${ROOT}/software/tools/run_wikitext_ppl.py" \
     --model "${LLAMA_MODEL_PATH}" --tokenizer "${LLAMA_MODEL_PATH}" \
-    --model-key llama2_7b --backend streamed \
+    --model-key llama2_7b --backend by_layer \
     --dataset "${DATASET_PATH}" --method bf16 \
     --num-samples "${NUM_SAMPLES}" \
     --output "${RESULTS}/llama__bf16.json" --quiet
   for mode in random_same_ratio static first2_only paper oracle; do
     "${PYTHON}" "${ROOT}/software/tools/run_wikitext_ppl.py" \
       --model "${LLAMA_CHECKPOINT}" --tokenizer "${LLAMA_MODEL_PATH}" \
-      --model-key llama2_7b --backend streamed --weight-source prequant \
+      --model-key llama2_7b --backend by_layer --weight-source prequant \
       --dataset "${DATASET_PATH}" \
       --num-samples "${NUM_SAMPLES}" \
       --method mbpriorq --model-type cloud --ablation-mode "${mode}" \

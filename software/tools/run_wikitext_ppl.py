@@ -27,6 +27,7 @@ from mbpriorq_ae.offload import quantize_model_weights, streamed_ppl
 from mbpriorq_ae.perplexity import (
     encode_dataset,
     load_text_dataset,
+    paper_compatible_by_layer_ppl,
     paper_compatible_full_model_ppl,
     paper_compatible_kv_cache_ppl,
 )
@@ -42,8 +43,11 @@ def parse_args():
     parser.add_argument(
         "--backend",
         default="full_gpu",
-        choices=("full_gpu", "streamed"),
-        help="Keep the whole model on GPU or materialize one safetensors layer at a time",
+        choices=("full_gpu", "by_layer", "streamed"),
+        help=(
+            "Keep the whole model on GPU, move one CPU-resident layer to GPU at a time, "
+            "or materialize one safetensors layer at a time"
+        ),
     )
     parser.add_argument(
         "--weight-source",
@@ -161,7 +165,7 @@ def main():
             )
     if args.vmb_profile_output and args.method != "mbpriorq":
         raise ValueError("VMB profiling requires --method mbpriorq")
-    if args.backend == "streamed" and args.batch_size != 1:
+    if args.backend != "full_gpu" and args.batch_size != 1:
         raise ValueError("True batch PPL is currently supported only by --backend full_gpu")
     if args.kv_cache_method != "disabled":
         if args.method != "bf16" or args.backend != "full_gpu":
@@ -224,7 +228,7 @@ def main():
 
     quantized_weight_count = 0
     resolved_family = args.model_family
-    if args.backend == "full_gpu":
+    if args.backend in {"full_gpu", "by_layer"}:
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
             dtype=torch.bfloat16,
@@ -236,7 +240,17 @@ def main():
             quantized_weight_count = quantize_model_weights(model, weight_quantizer)
         if activation_config is not None:
             wrapped = wrap_activation_linears(model, activation_config)
-        if args.kv_cache_method == "disabled":
+        if args.backend == "by_layer":
+            ppl, windows, total_nll = paper_compatible_by_layer_ppl(
+                model,
+                input_ids,
+                sequence_length=args.sequence_length,
+                num_samples=args.num_samples,
+                device=args.device,
+                progress=not args.quiet,
+            )
+            resolved_family = "by_layer_causal_lm"
+        elif args.kv_cache_method == "disabled":
             ppl, windows, total_nll = paper_compatible_full_model_ppl(
                 model,
                 input_ids,
@@ -263,7 +277,8 @@ def main():
                 progress=not args.quiet,
                 cache_factory=cache_factory,
             )
-        resolved_family = "full_causal_lm"
+        if args.backend == "full_gpu":
+            resolved_family = "full_causal_lm"
     else:
         streamed = streamed_ppl(
             checkpoint=args.model,
