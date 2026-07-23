@@ -205,7 +205,7 @@ class MBPriorQSharedFpuPool(
 object MBPriorQSharedFpuPoolGen {
   def main(args: Array[String]): Unit = {
     SpinalConfig(
-      targetDirectory = "rtl_upgraded_scheduler",
+      targetDirectory = "rtl_shared_fpu_pool",
       bitVectorWidthMax = 131072
     ).generateVerilog(new MBPriorQSharedFpuPool(128, 64, 3))
   }

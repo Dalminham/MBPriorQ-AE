@@ -5,7 +5,7 @@ import spinal.core._
 /**
  * Public 1024-bit input packet wrapper around the validated refined-output top.
  *
- * External input keeps the historical MBPriorQ packet format:
+ * External input uses the MBPriorQ packet format:
  *   [1023:1016] packet type
  *   [1015:1008] packet block / scale-entry start index
  *   [1007:0]    payload

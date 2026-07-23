@@ -90,7 +90,7 @@ Scale arrays are ordered as `[base, extended_0, extended_1, extended_2]`.
 
 The complete-system run produces two complementary files:
 
-- `system/system_summary.csv` is the primary reviewer-facing result. Each row
+- `system/system_summary.csv` is the primary per-block result. Each row
   reports one logical block, its weight/activation masks, selected path,
   sub-blocks, matrix/scale matches, packet count, output-cycle range, and status.
 - `system/external_1024_top.csv` is the low-level packet trace. Each
@@ -104,7 +104,7 @@ The complete-system run produces two complementary files:
 [`expected/`](expected/) contains the approved golden CSVs for these fixed
 fixtures. It is not used to calculate the expected RTL output. Functional
 expectations are declared or calculated inside each testbench and asserted
-before any CSV is written. The golden files provide a second, reviewer-visible
+before any CSV is written. The golden files provide a second, deterministic
 check that the complete observation is reproducible.
 
 A successful run ends with descriptive PASS lines followed by:
@@ -113,7 +113,7 @@ A successful run ends with descriptive PASS lines followed by:
 Hardware functional and golden-result validation passed.
 ```
 
-The reviewer may also rerun the validator directly:
+The validator can also be run directly:
 
 ```bash
 python hardware/validate_results.py \

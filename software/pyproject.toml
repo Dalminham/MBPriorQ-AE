@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mbpriorq-ae"
 version = "0.1.0"
-description = "Curated MBPriorQ artifact-evaluation quantization primitives"
+description = "MBPriorQ artifact-evaluation quantization primitives"
 requires-python = ">=3.10"
 dependencies = [
   "accelerate>=1.0",

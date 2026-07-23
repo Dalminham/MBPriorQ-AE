@@ -50,7 +50,7 @@ PY
 
 require_software_inputs() {
   local name
-  for name in QWEN_MODEL_PATH LLAMA_MODEL_PATH WIKITEXT_PATH PTB_PATH \
+  for name in QWEN_MODEL_PATH WIKITEXT_PATH PTB_PATH \
     MMLU_PRO_PATH GSM8K_DATASET_PATH MMLU_DATASET_PATH; do
     if [[ -z "${!name:-}" ]]; then
       echo "Missing ${name} for software-quick validation" >&2
@@ -88,10 +88,10 @@ software_quick() {
     "${ROOT}/experiments/table3/run_quick.sh"
 
   echo "[validate] Tables 5 and 6 reduced ablation paths"
-  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" LLAMA_MODEL_PATH="${LLAMA_MODEL_PATH}" \
+  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" \
     DATASET_PATH="${WIKITEXT_PATH}" OUTPUT_ROOT="${output}/table5" \
     CHECKPOINT_ROOT="${checkpoints}" "${ROOT}/experiments/table5/run_quick.sh"
-  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" LLAMA_MODEL_PATH="${LLAMA_MODEL_PATH}" \
+  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" \
     DATASET_PATH="${WIKITEXT_PATH}" OUTPUT_ROOT="${output}/table6" \
     "${ROOT}/experiments/table6/run_quick.sh"
 
@@ -102,7 +102,7 @@ software_quick() {
     "${ROOT}/experiments/table7/run_quick.sh"
 
   echo "[validate] Table 8 reduced KV-cache path"
-  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" LLAMA_MODEL_PATH="${LLAMA_MODEL_PATH}" \
+  QWEN_MODEL_PATH="${QWEN_MODEL_PATH}" \
     DATASET_PATH="${WIKITEXT_PATH}" OUTPUT_ROOT="${output}/table8" \
     "${ROOT}/experiments/table8/run_quick.sh"
   echo "[PASS] all reduced software workflows"

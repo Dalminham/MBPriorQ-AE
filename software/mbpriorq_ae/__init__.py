@@ -1,4 +1,4 @@
-"""Curated MBPriorQ artifact-evaluation primitives."""
+"""MBPriorQ artifact-evaluation primitives."""
 
 from .ebw import GlobalEBW
 from .integration import (

@@ -5,16 +5,11 @@ import spinal.core._
 /**
  * Refined-aware scheduled MultiMSA wrapper.
  *
- * The old scheduled wrapper maps one logical block to one physical MSA lane.
- * That is sufficient for a 4-cycle latency check, but it cannot preserve the
-   * refined output contract: a refined block must emit four independent
-   * partial matrix events with sub_block_idx 0..3. The output backend later
-   * pairs those events with the matching dequant factors.
- *
- * This wrapper treats the 16 MSA instances as a physical pool. A regular logical
+ * The wrapper treats the 16 MSA instances as a physical pool. A regular logical
  * block consumes one physical lane and emits sub_block_idx 0. A refined logical
  * block consumes four physical lanes, one per 4-element K sub-block, and emits
- * four partial matrices with the same block_idx and sub_block_idx 0..3.
+ * four partial matrices with the same block_idx and sub_block_idx 0..3. The
+ * output backend pairs each event with its matching dequant factor.
  */
 class MBPriorQRefinedScheduledMultiMSA(
   weightNum: Int = 16,

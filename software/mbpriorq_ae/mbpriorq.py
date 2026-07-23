@@ -55,36 +55,13 @@ class MBPriorQ_Quantizer:
         self.mask_set = False
         self.using_imatrix = args.get("using_imatrix", False)
         self.imatrix_file_name = args["imatrix_file_name"]
-        self.carlibration_threshold = None
+        self.calibration_threshold = None
         self.vmb_profile_enable = bool(args.get("vmb_profile_enable", False))
         self.vmb_profile_call_index = 0
         self.profile_calibration_column_mask = None
         self.metadata_target = args.get("metadata_target", "activation")
         if self.metadata_target not in {"activation", "kv_cache"}:
             raise ValueError(f"Invalid MBPriorQ metadata_target: {self.metadata_target}")
-        self.feature_mode = args.get("feature_mode")
-        allowed_feature_modes = {None, "std", "diff", "grad", "diff_grad", "std_grad"}
-        if self.feature_mode not in allowed_feature_modes:
-            raise ValueError(
-                f"Invalid MBPriorQ feature_mode: {self.feature_mode}. "
-                f"Expected one of {sorted(value for value in allowed_feature_modes if value)}."
-            )
-        if self.feature_mode is not None and self.model_type != "cloud":
-            raise ValueError("Feature comparison is defined for MBPriorQ cloud mode")
-        self.gradient_info = args.get("gradient_info")
-        if self.feature_mode in {"grad", "diff_grad", "std_grad"} and self.gradient_info is None:
-            raise ValueError(f"Feature {self.feature_mode} requires gradient information")
-
-    @staticmethod
-    def _legacy_layer_proportion(proportion_table, name):
-        if not name:
-            return None
-        return proportion_table.get(name.split(".")[-1])
-
-    def _record_activation_legacy_percent(self, replaced_percent, layer_proportion):
-        """Record legacy activation EBW only for the original Linear activation path."""
-        if self.metadata_target == "activation":
-            GlobalEBW.record_legacy_layer_percent("activation", replaced_percent, layer_proportion)
 
     def _record_activation_vmb_mask(self, vulnerable_mask):
         """Record formal VMB metadata for the active activation-like target."""
@@ -99,8 +76,6 @@ class MBPriorQ_Quantizer:
         data_pattern = data.view(data.shape[0], -1, LAST_LEVEL_BLOCK_SIZE)
         local_std = data_pattern.std(dim=-1).float()
         threshold_local_std, num_replaced_blk, replaced_percent = self._search_threshold_for_replacement(data, name)
-        proportion = self._legacy_layer_proportion(GlobalEBW.Qwen3_0_6B_weight, name)
-        GlobalEBW.record_legacy_layer_percent("weight", replaced_percent, proportion)
         elog(f"Weight Quantizer, name: {name}, threshold_local_std: {threshold_local_std}, num_replaced_blk: {num_replaced_blk}, replaced_percent: {replaced_percent}%", DEBUG)
         vulnerable_mask = local_std > threshold_local_std
         GlobalEBW.record_vmb_mask("weight", vulnerable_mask)
@@ -119,83 +94,6 @@ class MBPriorQ_Quantizer:
         del data, quants, q_scale, blk16_dequant_values, refined_dequant_values, vulnerable_mask_expanded, local_std, threshold_local_std
         return result
 
-    def fake_fisher_info_quantize_activation(self, data: torch.Tensor, name=None, tensor_shape=None):
-        batch_size, seq_len, hidden_dim = data.shape
-        org_dtype = data.dtype
-
-        total_seqlen = batch_size * seq_len
-        activation_2d = data.view(total_seqlen, hidden_dim)
-
-        N, K = tensor_shape[-2], tensor_shape[-1]
-
-        s2_mbpriorq = activation_2d.abs().amax().float() / (MBPRIORQ_MAX * FP8_MAX)
-        mbpriorq_quants_refined, mbpriorq_q_scale_refined = self._quantize_mbpriorq(activation_2d, self.refined_block_size, s2_mbpriorq)
-        mbpriorq_dequant_values_refined = self._dequantize_mbpriorq(mbpriorq_quants_refined, self.refined_block_size, mbpriorq_q_scale_refined, s2_mbpriorq, (activation_2d.shape[0], hidden_dim), org_dtype)
-
-        s2_input_nvfp4 = activation_2d.abs().amax().float() / (FP4_MAX * FP8_MAX)
-        nvfp4_quants, nvfp4_q_scale = self._quantize_nvfp4(activation_2d, SCALING_VECTOR_SIZE, s2_input_nvfp4)
-        nvfp4_dequant_values = self._dequantize_nvfp4(nvfp4_quants, nvfp4_q_scale, s2_input_nvfp4, (activation_2d.shape[0], K), org_dtype)
-
-        mbpriorq_quants_8, mbpriorq_q_scale_8 = self._quantize_mbpriorq(activation_2d, 8, s2_mbpriorq)
-        mbpriorq_dequant_values_8 = self._dequantize_mbpriorq(mbpriorq_quants_8, 8, mbpriorq_q_scale_8, s2_mbpriorq, (activation_2d.shape[0], hidden_dim), org_dtype)
-        mbpriorq_quants_32, mbpriorq_q_scale_32 = self._quantize_mbpriorq(activation_2d, 32, s2_mbpriorq)
-        mbpriorq_dequant_values_32 = self._dequantize_mbpriorq(mbpriorq_quants_32, 32, mbpriorq_q_scale_32, s2_mbpriorq, (activation_2d.shape[0], hidden_dim), org_dtype)
-
-        nvfp4_error = torch.abs(activation_2d - nvfp4_dequant_values)
-        nvfp4_error = nvfp4_error * self.gradient_info.abs().unsqueeze(0)
-        nvfp4_error = nvfp4_error.view(nvfp4_error.shape[0], -1, SCALING_VECTOR_SIZE)
-        nvfp4_error = nvfp4_error.sum(dim=-1).float()
-        nvfp4_error_flat = nvfp4_error.flatten()
-        nvfp4_error_90th = torch.quantile(nvfp4_error_flat, 0.9).item()
-        replace_mask = nvfp4_error > nvfp4_error_90th
-        replace_mask_expanded = replace_mask.repeat_interleave(SCALING_VECTOR_SIZE, dim=1)
-
-        result = torch.where(replace_mask_expanded, mbpriorq_dequant_values_refined, nvfp4_dequant_values)
-
-        return result
-
-    def fake_gradient_quantize_activation(self, data: torch.Tensor, name=None, tensor_shape=None):
-        batch_size, seq_len, hidden_dim = data.shape
-        org_dtype = data.dtype
-
-        total_seqlen = batch_size * seq_len
-        activation_2d = data.view(total_seqlen, hidden_dim)
-
-        if 1 == 1:
-            self.weight_importance = self.weight_importance.to(data.device)
-
-            data_pattern = activation_2d
-            first8_activation = data_pattern[:2]
-            micro_block_data = data_pattern.view(data_pattern.shape[0], -1, LAST_LEVEL_BLOCK_SIZE)
-            local_std = micro_block_data.std(dim=-1).float()
-            gradient_info = self.gradient_info.abs().view(-1, LAST_LEVEL_BLOCK_SIZE)
-            gradient_info = gradient_info.sum(dim=-1).float()
-            local_std = local_std + gradient_info.abs().unsqueeze(0)
-            std_flat = local_std.flatten()
-            std_90_percentile = torch.quantile(std_flat, 0.9).item()
-            threshold_local_std = std_90_percentile
-            vulnerable_mask = local_std > threshold_local_std
-
-            vulnerable_mask_expanded = vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
-        else:
-            vulnerable_mask_expanded = self.first_vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
-            vulnerable_mask_80_90_expanded = self.second_vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
-            stable_mask_50_80_expanded = self.stable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
-
-        N, K = tensor_shape[-2], tensor_shape[-1]
-
-        s2_mbpriorq = activation_2d.abs().amax().float() / (MBPRIORQ_MAX * FP8_MAX)
-        mbpriorq_quants_refined, mbpriorq_q_scale_refined = self._quantize_mbpriorq(activation_2d, self.refined_block_size, s2_mbpriorq)
-        mbpriorq_dequant_values_refined = self._dequantize_mbpriorq(mbpriorq_quants_refined, self.refined_block_size, mbpriorq_q_scale_refined, s2_mbpriorq, (activation_2d.shape[0], hidden_dim), org_dtype)
-
-        s2_input_nvfp4 = activation_2d.abs().amax().float() / (FP4_MAX * FP8_MAX)
-        nvfp4_quants, nvfp4_q_scale = self._quantize_nvfp4(activation_2d, SCALING_VECTOR_SIZE, s2_input_nvfp4)
-        nvfp4_dequant_values = self._dequantize_nvfp4(nvfp4_quants, nvfp4_q_scale, s2_input_nvfp4, (activation_2d.shape[0], K), org_dtype)
-
-        result = torch.where(vulnerable_mask_expanded, mbpriorq_dequant_values_refined, nvfp4_dequant_values)
-
-        return result
-
     def fake_quantize_activation_edge(self, data: torch.Tensor, name=None, tensor_shape=None):
         org_shape = data.shape
         org_dtype = data.dtype
@@ -209,16 +107,14 @@ class MBPriorQ_Quantizer:
             micro_block_data = activation_2d.view(activation_2d.shape[0], -1, LAST_LEVEL_BLOCK_SIZE)
             global_std = micro_block_data.std(dim=-1).float()
             threshold_local_std, num_replaced_blk, replaced_percent = self._search_threshold_for_replacement(data, name)
-            elog(f"Carlibration: Layer{name}, threshold_local_std: {threshold_local_std}, num_replaced_blk: {num_replaced_blk}, replaced_percent: {replaced_percent}%", DEBUG)
-            proportion = self._legacy_layer_proportion(GlobalEBW.Qwen3_8B_input, name)
-            self._record_activation_legacy_percent(replaced_percent, proportion)
+            elog(f"Calibration: Layer{name}, threshold_local_std: {threshold_local_std}, num_replaced_blk: {num_replaced_blk}, replaced_percent: {replaced_percent}%", DEBUG)
             vulnerable_mask = global_std > threshold_local_std
             self._record_activation_vmb_mask(vulnerable_mask)
 
             vulnerable_mask_expanded = vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
 
             self.mask_set = True
-            self.carlibration_threshold = threshold_local_std
+            self.calibration_threshold = threshold_local_std
             if self.vmb_profile_enable:
                 self.profile_calibration_column_mask = vulnerable_mask.any(dim=0).detach().cpu()
             self._record_vmb_profile(
@@ -238,7 +134,7 @@ class MBPriorQ_Quantizer:
             first2_activation = activation_2d[:2]
             local_std = first2_activation.std(dim=-1).float()
             threshold_local_std, num_replaced_blk, replaced_percent = self._search_threshold_for_replacement(first2_activation, name)
-            new_threshold_local_std = (self.carlibration_threshold + threshold_local_std) / 2
+            new_threshold_local_std = (self.calibration_threshold + threshold_local_std) / 2
             vulnerable_mask = global_std > new_threshold_local_std
             self._record_activation_vmb_mask(vulnerable_mask)
             vulnerable_mask_expanded = vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
@@ -250,7 +146,7 @@ class MBPriorQ_Quantizer:
                     selected_rule="average_calibration_and_first2_threshold",
                     selected_mask=vulnerable_mask,
                     oracle_mask=oracle_mask,
-                    calibration_threshold=self.carlibration_threshold,
+                    calibration_threshold=self.calibration_threshold,
                     selected_threshold=new_threshold_local_std,
                     oracle_threshold=oracle_threshold,
                     replaced_percent=oracle_replaced_percent,
@@ -317,135 +213,6 @@ class MBPriorQ_Quantizer:
         local_mask = local_std > threshold_local_std
         return local_mask.any(dim=0), threshold_local_std, num_replaced_blk, replaced_percent
 
-    @staticmethod
-    def _topk_mask(metric: torch.Tensor, count: int) -> torch.Tensor:
-        total = metric.numel()
-        if count <= 0:
-            return torch.zeros_like(metric, dtype=torch.bool)
-        if count >= total:
-            return torch.ones_like(metric, dtype=torch.bool)
-        indices = torch.topk(metric.reshape(-1), k=count, largest=True, sorted=False).indices
-        selected = torch.zeros(total, dtype=torch.bool, device=metric.device)
-        selected[indices] = True
-        return selected.view_as(metric)
-
-    @staticmethod
-    def _feature_std_metric(activation_2d: torch.Tensor) -> torch.Tensor:
-        return activation_2d.view(
-            activation_2d.shape[0], -1, LAST_LEVEL_BLOCK_SIZE
-        ).std(dim=-1).float()
-
-    def _feature_diff_metric(
-        self,
-        activation_2d: torch.Tensor,
-        org_dtype: torch.dtype,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        global_scale = activation_2d.abs().amax().float() / (FP4_MAX * FP8_MAX)
-        quants, block_scale = self._quantize_nvfp4(
-            activation_2d, SCALING_VECTOR_SIZE, global_scale
-        )
-        dequantized = self._dequantize_nvfp4(
-            quants,
-            block_scale,
-            global_scale,
-            tuple(activation_2d.shape),
-            org_dtype,
-        )
-        error = (activation_2d - dequantized).abs()
-        metric = error.view(
-            error.shape[0], -1, LAST_LEVEL_BLOCK_SIZE
-        ).sum(dim=-1).float()
-        return metric, dequantized
-
-    def _feature_gradient_metric(
-        self,
-        name: str,
-        metric_shape: torch.Size,
-        device: torch.device,
-    ) -> torch.Tensor:
-        key = (name or "").replace("[", ".").replace("]", "")
-        gradient = self.gradient_info.get(key) if self.gradient_info is not None else None
-        if gradient is None:
-            raise KeyError(f"Gradient calibration has no entry for {key!r}")
-        gradient = gradient.to(device=device, dtype=torch.float32).abs().reshape(-1)
-        expected = metric_shape[-1] * LAST_LEVEL_BLOCK_SIZE
-        if gradient.numel() != expected:
-            raise ValueError(
-                f"Gradient calibration width mismatch for {key}: "
-                f"expected {expected}, got {gradient.numel()}"
-            )
-        per_block = gradient.view(-1, LAST_LEVEL_BLOCK_SIZE).sum(dim=-1)
-        return per_block.unsqueeze(0).expand(metric_shape[0], -1)
-
-    def _select_feature_mask(
-        self,
-        activation_2d: torch.Tensor,
-        name: str,
-        org_dtype: torch.dtype,
-    ) -> tuple[torch.Tensor, torch.Tensor | None]:
-        std_metric = self._feature_std_metric(activation_2d)
-        threshold, _, _ = self._search_threshold_for_replacement(activation_2d, name)
-        reference_count = int((std_metric > threshold).sum().item())
-        nvfp4_dequantized = None
-
-        if self.feature_mode == "std":
-            metric = std_metric
-        elif self.feature_mode == "diff":
-            metric, nvfp4_dequantized = self._feature_diff_metric(activation_2d, org_dtype)
-        elif self.feature_mode == "grad":
-            metric = self._feature_gradient_metric(name, std_metric.shape, activation_2d.device)
-        elif self.feature_mode == "diff_grad":
-            metric, nvfp4_dequantized = self._feature_diff_metric(activation_2d, org_dtype)
-            metric *= self._feature_gradient_metric(name, metric.shape, activation_2d.device)
-        elif self.feature_mode == "std_grad":
-            metric = std_metric * self._feature_gradient_metric(
-                name, std_metric.shape, activation_2d.device
-            )
-        else:
-            raise ValueError(f"Unsupported feature mode: {self.feature_mode}")
-        return self._topk_mask(metric, reference_count), nvfp4_dequantized
-
-    def fake_feature_quantize_activation(self, data: torch.Tensor, name=None, tensor_shape=None):
-        org_shape = data.shape
-        org_dtype = data.dtype
-        activation_2d = data.view(-1, org_shape[-1]) if len(org_shape) == 3 else data
-
-        if not self.mask_set:
-            vulnerable_mask, nvfp4_dequantized = self._select_feature_mask(
-                activation_2d, name, org_dtype
-            )
-            self.first_vulnerable_mask = vulnerable_mask
-            self.mask_set = True
-        else:
-            first_tokens = activation_2d[:2]
-            local_mask, _ = self._select_feature_mask(first_tokens, name, org_dtype)
-            static_mask = self._match_activation_rows(
-                self.first_vulnerable_mask, activation_2d.shape[0], name
-            )
-            vulnerable_mask = static_mask | self._expand_column_mask(
-                local_mask.any(dim=0), activation_2d.shape[0]
-            )
-            nvfp4_dequantized = None
-
-        self._record_activation_vmb_mask(vulnerable_mask)
-        expanded_mask = vulnerable_mask.repeat_interleave(LAST_LEVEL_BLOCK_SIZE, dim=1)
-
-        global_scale = activation_2d.abs().amax().float() / (MBPRIORQ_MAX * FP8_MAX)
-        quants, block_scale = self._quantize_mbpriorq(
-            activation_2d, self.refined_block_size, global_scale
-        )
-        refined = self._dequantize_mbpriorq(
-            quants,
-            self.refined_block_size,
-            block_scale,
-            global_scale,
-            tuple(activation_2d.shape),
-            org_dtype,
-        )
-        if nvfp4_dequantized is None or nvfp4_dequantized.shape != activation_2d.shape:
-            _, nvfp4_dequantized = self._feature_diff_metric(activation_2d, org_dtype)
-        return torch.where(expanded_mask, refined, nvfp4_dequantized).view(org_shape)
-
     def fake_quantize_activation_cloud(self, data: torch.Tensor, name=None, tensor_shape=None):
         org_shape = data.shape
         org_dtype = data.dtype
@@ -459,9 +226,7 @@ class MBPriorQ_Quantizer:
             micro_block_data = activation_2d.view(activation_2d.shape[0], -1, LAST_LEVEL_BLOCK_SIZE)
             global_std = micro_block_data.std(dim=-1).float()
             threshold_local_std, num_replaced_blk, replaced_percent = self._search_threshold_for_replacement(data, name)
-            elog(f"Carlibration: Layer{name}, threshold_local_std: {threshold_local_std}, num_replaced_blk: {num_replaced_blk}, replaced_percent: {replaced_percent}%", DEBUG)
-            proportion = self._legacy_layer_proportion(GlobalEBW.Qwen3_0_6B_input, name)
-            self._record_activation_legacy_percent(replaced_percent, proportion)
+            elog(f"Calibration: Layer{name}, threshold_local_std: {threshold_local_std}, num_replaced_blk: {num_replaced_blk}, replaced_percent: {replaced_percent}%", DEBUG)
             reference_mask = global_std > threshold_local_std
 
             if self.ablation_mode == "random_same_ratio":
@@ -549,8 +314,6 @@ class MBPriorQ_Quantizer:
         return result.view(org_shape)
 
     def fake_quantize_activation(self, data: torch.Tensor, name=None, tensor_shape=None):
-        if self.feature_mode is not None:
-            return self.fake_feature_quantize_activation(data, name, tensor_shape)
         if self.model_type == "edge":
             if self.ablation_mode != "paper":
                 raise ValueError(

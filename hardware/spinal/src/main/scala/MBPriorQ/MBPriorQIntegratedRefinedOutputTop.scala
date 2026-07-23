@@ -5,9 +5,9 @@ import spinal.core._
 /**
  * Packet-input internal top with refined MultiMSA output packetization.
  *
- * This top keeps the split-packet input interface from MBPriorQIntegratedPacketTop
- * and replaces the old one-result-per-block MSA output with
- * MBPriorQRefinedScheduledMultiMSA plus MBPriorQOutputBackend.
+ * The split-packet input interface feeds MBPriorQRefinedScheduledMultiMSA and
+ * MBPriorQOutputBackend, which emit matrix-scale pairs for regular and refined
+ * blocks.
  */
 class MBPriorQIntegratedRefinedOutputTop(
   blockCount: Int = 16,
@@ -152,7 +152,7 @@ class MBPriorQIntegratedRefinedOutputTop(
     }
   }
 
-  private val scheduler = new MBPriorQUpgradedPacketScheduler(blockCount, laneCount, outputBufferCapacity, vpuIssueMaskEnable = true)
+  private val scheduler = new MBPriorQPacketScheduler(blockCount, laneCount, outputBufferCapacity, vpuIssueMaskEnable = true)
   private val fpuPool = new MBPriorQSharedFpuPool(blockCount, fpuCount, fpuOpLatency)
   private val factorBuffer = new MBPriorQScaleFactorBuffer(blockCount)
   private val refinedMsa = new MBPriorQRefinedScheduledMultiMSA(weightNum, inputNum, blockCount, laneCount)

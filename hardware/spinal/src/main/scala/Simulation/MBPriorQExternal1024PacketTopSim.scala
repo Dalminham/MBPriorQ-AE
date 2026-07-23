@@ -94,7 +94,7 @@ object MBPriorQExternal1024PacketTopSim {
     packets += OldPacket(0x05, 0, packAddressedScaleEntries(inputBase, 0))
     packets += OldPacket(0x05, 8, packAddressedScaleEntries(inputBase, 8))
 
-    // Extended scale entries use the old flat entry address: block * 3 + extra_idx.
+    // Extended scale entries use the flat entry address: block * 3 + extra_idx.
     packets += OldPacket(0x04, 24, packAddressedScaleEntries(weightExt, 24))
     packets += OldPacket(0x04, 0, packAddressedScaleEntries(weightExt, 0))
     packets += OldPacket(0x06, 0, packAddressedScaleEntries(inputExt, 0))

@@ -74,11 +74,6 @@ def parse_args():
     )
     parser.add_argument("--random-seed", type=int, default=20260606)
     parser.add_argument("--refined-block-size", type=int, default=4, choices=(2, 4, 8))
-    parser.add_argument(
-        "--feature-mode",
-        choices=("std", "diff", "grad", "diff_grad", "std_grad"),
-    )
-    parser.add_argument("--gradient-file")
     parser.add_argument("--vmb-profile-output")
     parser.add_argument("--sequence-length", type=int, default=2048)
     parser.add_argument("--num-samples", type=int, default=0)
@@ -152,17 +147,6 @@ def main():
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested but is unavailable")
     weight_source, checkpoint_metadata = _resolve_weight_source(args)
-    if args.feature_mode and args.method != "mbpriorq":
-        raise ValueError("Feature comparison requires --method mbpriorq")
-    if args.feature_mode and weight_source != "none":
-        raise ValueError("Feature comparison is W16A4 and requires --weight-source none")
-    if args.gradient_file and args.feature_mode not in {"grad", "diff_grad", "std_grad"}:
-        raise ValueError("--gradient-file is used only by gradient-based feature rows")
-    if args.feature_mode in {"grad", "diff_grad", "std_grad"}:
-        if not args.gradient_file or not Path(args.gradient_file).is_file():
-            raise FileNotFoundError(
-                f"Feature {args.feature_mode} requires a valid --gradient-file"
-            )
     if args.vmb_profile_output and args.method != "mbpriorq":
         raise ValueError("VMB profiling requires --method mbpriorq")
     if args.backend != "full_gpu" and args.batch_size != 1:
@@ -198,11 +182,6 @@ def main():
     input_ids = encode_dataset(tokenizer, dataset)
     activation_config = None
     weight_quantizer = None
-    gradient_info = None
-    if args.gradient_file:
-        gradient_info = torch.load(args.gradient_file, map_location="cpu", weights_only=True)
-        if not isinstance(gradient_info, dict):
-            raise TypeError("Gradient calibration file must contain a tensor dictionary")
     if args.method == "mbpriorq":
         activation_config = ActivationQuantizationConfig(
             method=args.method,
@@ -210,8 +189,6 @@ def main():
             ablation_mode=args.ablation_mode,
             random_seed=args.random_seed,
             refined_block_size=args.refined_block_size,
-            feature_mode=args.feature_mode,
-            gradient_info=gradient_info,
             vmb_profile_enable=bool(args.vmb_profile_output),
         )
         if weight_source == "online":
@@ -332,8 +309,6 @@ def main():
         "model_type": args.model_type if args.method == "mbpriorq" else None,
         "ablation_mode": args.ablation_mode if args.method == "mbpriorq" else None,
         "refined_block_size": args.refined_block_size if args.method == "mbpriorq" else None,
-        "feature_mode": args.feature_mode,
-        "gradient_file": args.gradient_file,
         "vmb_profile_output": profile_path,
         "vmb_profile_summary": GlobalVMBProfiler.summary() if profile_path else None,
         "kv_cache_method": args.kv_cache_method,

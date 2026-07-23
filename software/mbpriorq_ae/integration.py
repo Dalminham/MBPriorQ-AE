@@ -21,8 +21,6 @@ class ActivationQuantizationConfig:
     ablation_mode: str = "paper"
     random_seed: int = 20260606
     refined_block_size: int = 4
-    feature_mode: str | None = None
-    gradient_info: dict[str, torch.Tensor] | None = None
     vmb_profile_enable: bool = False
     metadata_target: str = "activation"
 
@@ -37,12 +35,10 @@ def quantizer_arguments(
     refined_block_size: int = 4,
     using_imatrix: bool = False,
     imatrix_file_name: str | None = None,
-    feature_mode: str | None = None,
-    gradient_info: dict[str, torch.Tensor] | None = None,
     vmb_profile_enable: bool = False,
     metadata_target: str = "activation",
 ) -> dict:
-    """Build the exact argument surface used by the curated quantizers."""
+    """Build the argument surface used by the MBPriorQ quantizer."""
     if method != "mbpriorq":
         raise ValueError(f"Unsupported quantization method: {method}")
     return {
@@ -56,8 +52,6 @@ def quantizer_arguments(
         "refined_block_size": int(refined_block_size),
         "using_imatrix": bool(using_imatrix),
         "imatrix_file_name": imatrix_file_name,
-        "feature_mode": feature_mode,
-        "gradient_info": gradient_info,
         "vmb_profile_enable": bool(vmb_profile_enable),
         "metadata_target": metadata_target,
     }
@@ -69,13 +63,7 @@ def make_quantizer(*, method: str, name: str | None, **kwargs):
 
 
 class ActivationFakeQuantLinear(nn.Module):
-    """Linear layer with source-faithful activation fake quantization.
-
-    The original EasyLLM wrapper overwrites the Linear input with its
-    fake-quantized/dequantized value immediately before ``F.linear``. This
-    compact wrapper preserves that behavior without importing unrelated
-    quantization backends.
-    """
+    """Apply activation fake quantization immediately before ``F.linear``."""
 
     def __init__(
         self,
@@ -99,8 +87,6 @@ class ActivationFakeQuantLinear(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
-            feature_mode=config.feature_mode,
-            gradient_info=config.gradient_info,
             vmb_profile_enable=config.vmb_profile_enable,
             metadata_target=config.metadata_target,
         )
@@ -142,8 +128,6 @@ class ActivationFakeQuantModule(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
-            feature_mode=config.feature_mode,
-            gradient_info=config.gradient_info,
             vmb_profile_enable=config.vmb_profile_enable,
             metadata_target=config.metadata_target,
         )
@@ -177,8 +161,6 @@ class ActivationFakeQuantQwen3VLExperts(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
-            feature_mode=config.feature_mode,
-            gradient_info=config.gradient_info,
             vmb_profile_enable=config.vmb_profile_enable,
             metadata_target=config.metadata_target,
         )
@@ -189,8 +171,6 @@ class ActivationFakeQuantQwen3VLExperts(nn.Module):
             ablation_mode=config.ablation_mode,
             random_seed=config.random_seed,
             refined_block_size=config.refined_block_size,
-            feature_mode=config.feature_mode,
-            gradient_info=config.gradient_info,
             vmb_profile_enable=config.vmb_profile_enable,
             metadata_target=config.metadata_target,
         )

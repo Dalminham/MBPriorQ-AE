@@ -77,14 +77,14 @@ class PEArray(WeightNum:Int, InputNum:Int) extends Component {
     // Input
     val Valid = in Bool()
     val OutputReady = in Bool()
-    val acc_cycle_sel = in Bool() // 1‘b0 - 每4次乘加后输出； 1’b1 - 每16次乘加后输出
+    val acc_cycle_sel = in Bool() // False: emit after 4 MACs; true: emit after 16 MACs.
     val WeightRow = in Bits(4*WeightNum bits)
     val InputRow = in Bits(4*InputNum bits)
     // Output
     val output_pulse = out Bool()
     val Result = out Bits(16*WeightNum*InputNum bits)
   }
-  // 脉冲发生器，输出信号维护
+  // Emit one output pulse after the selected accumulation interval.
   private val cycle_counter = Reg(UInt(4 bits)) init (0)
   private val target_value: UInt = Mux(io.acc_cycle_sel, U"4'd15", U"4'd3")
   private val cycle_counter_next: UInt = cycle_counter + U"4'd1"

@@ -48,7 +48,7 @@ Run syntax checks and dependency-light tests with:
 ```
 
 `./validate.sh software-quick` exercises every software workflow with reduced
-inputs. It requires the two model paths and five dataset paths documented by
+inputs. It requires the Qwen3-0.6B path and five dataset paths documented by
 the experiment READMEs. The three downstream benchmarks use one example each.
 Run `./validate.sh hardware` for the complete SpinalHDL functional regression.
 

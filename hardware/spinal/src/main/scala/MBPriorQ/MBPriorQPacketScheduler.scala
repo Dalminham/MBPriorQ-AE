@@ -3,18 +3,13 @@ package MBPriorQ
 import spinal.core._
 
 /**
- * Upgraded packet/dataflow scheduler for MBPriorQ.
+ * Packet and dataflow scheduler for MBPriorQ.
  *
- * This module migrates the model-complete control rules into synthesizable RTL:
- * per-block metadata/matrix readiness, independent MSA and VPU issue, per-block
- * MSA/dequant completion, block-index-ordered output commit, and explicit
- * output-buffer capacity observation.
- *
- * It is a control/scheduling module. The numeric MSA datapath and VPU/FPU pool
- * connect through issue/done handshakes and are intentionally kept outside this
- * module.
+ * The scheduler tracks per-block metadata and matrix readiness, issues MSA and
+ * VPU work independently, joins their completion events, and commits output
+ * packets in block-index order subject to output-buffer capacity.
  */
-class MBPriorQUpgradedPacketScheduler(
+class MBPriorQPacketScheduler(
   blockCount: Int = 128,
   msaCount: Int = 16,
   outputBufferCapacity: Int = 16,
@@ -323,11 +318,11 @@ class MBPriorQUpgradedPacketScheduler(
   }
 }
 
-object MBPriorQUpgradedPacketSchedulerGen {
+object MBPriorQPacketSchedulerGen {
   def main(args: Array[String]): Unit = {
     SpinalConfig(
-      targetDirectory = "rtl_upgraded_scheduler",
+      targetDirectory = "rtl_packet_scheduler",
       bitVectorWidthMax = 131072
-    ).generateVerilog(new MBPriorQUpgradedPacketScheduler(128, 16, 16))
+    ).generateVerilog(new MBPriorQPacketScheduler(128, 16, 16))
   }
 }

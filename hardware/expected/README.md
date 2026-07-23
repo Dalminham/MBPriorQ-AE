@@ -9,7 +9,7 @@ these files.
 
 - `modules/` records the readable inputs, expected behavior, observed behavior,
   and status for the five module-level simulations.
-- `system/system_summary.csv` is the reviewer-facing per-block summary for the
+- `system/system_summary.csv` is the per-block summary for the
   complete 16-lane packet path.
 - `system/external_1024_top.csv` is the low-level 1024-bit output-packet trace
   retained for packet ordering and backpressure inspection.

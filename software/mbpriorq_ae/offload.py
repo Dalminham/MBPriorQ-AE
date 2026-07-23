@@ -171,7 +171,7 @@ def quantize_state_weights(
 
 @torch.no_grad()
 def quantize_model_weights(model: nn.Module, quantizer) -> int:
-    """Apply source-faithful weight fake quantization to an in-memory model."""
+    """Apply weight fake quantization to an in-memory model."""
     count = 0
     seen: set[int] = set()
 

@@ -24,7 +24,7 @@ export MBPRIORQ_OUTPUT_PAIR_JOIN_CSV="${OUT}/modules/output_pair_join.csv"
 cd "${ROOT}/hardware/spinal"
 "${SBT}" \
   "runMain Simulation.MBPriorQScaleReconstructorSim" \
-  "runMain Simulation.MBPriorQUpgradedPacketSchedulerSim" \
+  "runMain Simulation.MBPriorQPacketSchedulerSim" \
   "runMain Simulation.MBPriorQSharedFpuPoolSim" \
   "runMain Simulation.MBPriorQRefinedScheduledMultiMSASim" \
   "runMain Simulation.MBPriorQOutputPairJoinBufferSim"

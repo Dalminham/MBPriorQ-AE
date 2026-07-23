@@ -5,7 +5,7 @@ import torch.nn as nn
 from mbpriorq_ae.offload import _assign_module, quantize_state_weights
 
 
-def test_assign_module_accepts_legacy_llama_rotary_buffer():
+def test_assign_module_accepts_llama_rotary_buffer():
     module = nn.Linear(3, 2)
     state = {
         "weight": torch.ones_like(module.weight),

@@ -1,13 +1,13 @@
 package Simulation
 
-import MBPriorQ.MBPriorQUpgradedPacketScheduler
+import MBPriorQ.MBPriorQPacketScheduler
 import spinal.core._
 import spinal.core.sim._
 
 import java.io.{File, PrintWriter}
 import scala.collection.mutable
 
-object MBPriorQUpgradedPacketSchedulerSim {
+object MBPriorQPacketSchedulerSim {
   private case class MaskIssue(cycle: Int, mask: Int)
   private case class BlockIssue(cycle: Int, block: Int, refined: Boolean)
   private case class OutputEvent(cycle: Int, block: Int, packet: Int)
@@ -30,10 +30,10 @@ object MBPriorQUpgradedPacketSchedulerSim {
 
     SimConfig
       .withConfig(SpinalConfig(bitVectorWidthMax = 4096))
-      .workspacePath(simWorkspace("MBPriorQUpgradedPacketSchedulerSim"))
+      .workspacePath(simWorkspace("MBPriorQPacketSchedulerSim"))
       .addSimulatorFlag("-CFLAGS").addSimulatorFlag("-std=c++14")
       .addSimulatorFlag("-LDFLAGS").addSimulatorFlag("-std=c++14")
-      .compile(new MBPriorQUpgradedPacketScheduler(
+      .compile(new MBPriorQPacketScheduler(
         blockCount = blockCount,
         msaCount = msaCount,
         outputBufferCapacity = blockCount,

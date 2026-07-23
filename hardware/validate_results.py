@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate hardware behavior and compare results with curated golden CSVs."""
+"""Validate hardware behavior and compare results with golden CSVs."""
 
 from __future__ import annotations
 
